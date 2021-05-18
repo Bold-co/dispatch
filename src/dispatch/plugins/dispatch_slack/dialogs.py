@@ -10,7 +10,6 @@ from dispatch.service import service as service_service
 
 from .config import SLACK_COMMAND_UPDATE_NOTIFICATIONS_GROUP_SLUG
 
-
 log = logging.getLogger(__name__)
 
 
@@ -110,6 +109,35 @@ def create_engage_oncall_dialog(
                 "value": "No",
                 "options": page_options,
             },
+        ],
+    }
+
+    dispatch_slack_service.open_dialog_with_user(slack_client, command["trigger_id"], dialog)
+
+
+@slack_background_task
+def create_assign_task_dialog(
+    user_id: str,
+    user_email: str,
+    channel_id: str,
+    incident_id: int,
+    command: dict = None,
+    db_session=None,
+    slack_client=None,
+):
+    """Creates a dialog for add tasks."""
+    dialog = {
+        "callback_id": command["command"],
+        "title": "Assign tasks",
+        "submit_label": "Assign",
+        "elements": [
+            {"type": "textarea", "label": "Task", "name": "task", "value": ""},
+            {
+                "label": "Participant",
+                "type": "select",
+                "name": "participant",
+                "data_source": "users",
+            }
         ],
     }
 

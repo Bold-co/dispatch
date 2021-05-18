@@ -66,7 +66,6 @@ def list_plugins():
                 record.title,
                 record.slug,
                 record.version,
-                record.enabled,
                 record.type,
                 record.author,
                 record.description,

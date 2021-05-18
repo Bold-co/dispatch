@@ -158,13 +158,6 @@ def create_executive_report(
         new_folder_id=incident.storage.resource_id, file_id=executive_report_document["id"]
     )
 
-    event_service.log(
-        db_session=db_session,
-        source=storage_plugin.plugin.title,
-        description="Executive report document added to storage",
-        incident_id=incident.id,
-    )
-
     document_in = DocumentCreate(
         name=executive_report_document["name"],
         resource_id=executive_report_document["id"],
@@ -181,13 +174,6 @@ def create_executive_report(
     db_session.add(executive_report)
     db_session.add(incident)
     db_session.commit()
-
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description="Executive report document added to incident",
-        incident_id=incident.id,
-    )
 
     # we update the incident update document
     document_plugin = plugin_service.get_active_instance(

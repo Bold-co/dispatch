@@ -11,7 +11,7 @@
     item-text="name"
     multiple
     no-filter
-    v-model="tags"
+    v-model="tag"
   >
     <template v-slot:no-data>
       <v-list-item>

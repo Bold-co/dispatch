@@ -73,9 +73,11 @@ class ResourceBase(DispatchBase):
 
     @validator("weblink")
     def sanitize_weblink(cls, v):
-        if validators.url(v):
-            return v
-        raise ValueError("Weblink must be a valid url.")
+        if v:
+            if validators.url(v):
+                return v
+            raise ValueError("Weblink must be a valid url.")
+        return None
 
 
 class ContactBase(DispatchBase):

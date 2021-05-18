@@ -421,6 +421,9 @@ setup(
             "slack_conversation = dispatch.plugins.dispatch_slack.plugin:SlackConversationPlugin",
             "zoom_conference = dispatch.plugins.dispatch_zoom.plugin:ZoomConferencePlugin",
             "opsgenie_oncall = dispatch.plugins.dispatch_opsgenie.plugin:OpsGenieOncallPlugin",
+            "azure_ticket = dispatch.plugins.bold_azure.plugin:AzureTicketPlugin",
+            "bold_workflow = dispatch.plugins.bold_core.workflow.plugin:BoldWorkflowPlugin",
+            "bold_document = dispatch.plugins.bold_core.docs.plugin:BoldDocumentPlugin",
         ],
     },
 )

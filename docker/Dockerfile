@@ -83,6 +83,9 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/* \
     && npm install mjml
 
+RUN modules="/usr/local/lib/python3.8/site-packages/dispatch/static/dispatch/node_modules" && \
+    cp -r ${modules}/mjml/lib/ ${modules}/lib/
+
 EXPOSE 8000
 VOLUME /var/lib/dispatch/files
 

@@ -94,8 +94,8 @@ class SlackConversationPlugin(ConversationPlugin):
         self,
         conversation_id: str,
         text: str,
-        message_template: List[dict],
-        notification_type: str,
+        message_template: List[dict] = None,
+        notification_type: str = None,
         items: Optional[List] = None,
         blocks: Optional[List] = None,
         persist: bool = False,
@@ -203,7 +203,9 @@ class SlackContactPlugin(ContactPlugin):
 
     def get(self, email: str, **kwargs):
         """Fetch user info by email."""
-        team = department = weblink = "Unknown"
+        team = "Bold"
+        department = "Technology"
+        weblink = ""
 
         profile = get_user_profile_by_email(self.client, email)
         profile_fields = profile.get("fields")

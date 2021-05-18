@@ -76,6 +76,7 @@ def sync_workflows(db_session, incidents, notify: bool = False):
                             instance_artifacts=instance.artifacts,
                             workflow_name=instance.workflow.name,
                             workflow_description=instance.workflow.description,
+                            project_id=incident.project_id
                         )
                     else:
                         send_workflow_notification(
@@ -88,6 +89,7 @@ def sync_workflows(db_session, incidents, notify: bool = False):
                             instance_creator_name=instance.creator.individual.name,
                             workflow_name=instance.workflow.name,
                             workflow_description=instance.workflow.description,
+                            project_id=incident.project_id
                         )
 
 

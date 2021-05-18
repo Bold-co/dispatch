@@ -33,11 +33,9 @@ from dispatch.plugins.dispatch_slack import service as dispatch_slack_service
 from dispatch.workflow import service as workflow_service
 from dispatch.workflow.flows import send_workflow_notification
 from dispatch.workflow.models import Workflow, WorkflowInstanceCreate
-
 from .messaging import create_incident_reported_confirmation_message
 from .service import get_user_profile_by_email, get_user_email
 from .decorators import slack_background_task
-
 
 log = logging.getLogger(__name__)
 
@@ -277,6 +275,7 @@ def report_incident_from_submitted_form(
     db_session: Session = None,
     slack_client=None,
 ):
+    default_project_id = 1
     submitted_form = action.get("view")
     parsed_form_data = parse_submitted_form(submitted_form)
 
@@ -323,14 +322,15 @@ def create_block_option_from_template(text: str, value: str):
 
 def build_report_incident_blocks(channel_id: str, db_session: Session):
     """Builds all blocks required for the reporting incident modal."""
+    default_project_id = 1
     incident_type_options = []
-    for incident_type in incident_type_service.get_all(db_session=db_session):
+    for incident_type in incident_type_service.get_all(db_session=db_session, project_id=default_project_id):
         incident_type_options.append(
             create_block_option_from_template(text=incident_type.name, value=incident_type.name)
         )
 
     incident_priority_options = []
-    for incident_priority in incident_priority_service.get_all(db_session=db_session):
+    for incident_priority in incident_priority_service.get_all(db_session=db_session, project_id=default_project_id):
         incident_priority_options.append(
             create_block_option_from_template(
                 text=incident_priority.name, value=incident_priority.name
@@ -347,12 +347,12 @@ def build_report_incident_blocks(channel_id: str, db_session: Session):
                     {
                         "type": "mrkdwn",
                         "text": "If you suspect an incident and require help, "
-                        "please fill out the following to the best of your abilities.",
+                                "please fill out the following to the best of your abilities.",
                     }
                 ],
             },
             {
-                "block_id": IncidentSlackViewBlockId.title,
+                "block_id": IncidentSlackViewBlockId.title.value,
                 "type": "input",
                 "label": {"type": "plain_text", "text": "Title"},
                 "element": {
@@ -364,7 +364,7 @@ def build_report_incident_blocks(channel_id: str, db_session: Session):
                 },
             },
             {
-                "block_id": IncidentSlackViewBlockId.description,
+                "block_id": IncidentSlackViewBlockId.description.value,
                 "type": "input",
                 "label": {"type": "plain_text", "text": "Description"},
                 "element": {
@@ -377,7 +377,7 @@ def build_report_incident_blocks(channel_id: str, db_session: Session):
                 },
             },
             {
-                "block_id": IncidentSlackViewBlockId.type,
+                "block_id": IncidentSlackViewBlockId.type.value,
                 "type": "input",
                 "label": {"type": "plain_text", "text": "Type"},
                 "element": {
@@ -387,7 +387,7 @@ def build_report_incident_blocks(channel_id: str, db_session: Session):
                 },
             },
             {
-                "block_id": IncidentSlackViewBlockId.priority,
+                "block_id": IncidentSlackViewBlockId.priority.value,
                 "type": "input",
                 "label": {"type": "plain_text", "text": "Priority", "emoji": True},
                 "element": {
@@ -399,7 +399,7 @@ def build_report_incident_blocks(channel_id: str, db_session: Session):
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Submit"},
-        "callback_id": NewIncidentSubmission.form_slack_view,
+        "callback_id": NewIncidentSubmission.form_slack_view.value,
         "private_metadata": json.dumps({"channel_id": str(channel_id)}),
     }
 
@@ -446,21 +446,21 @@ def build_incident_participants_select_block(incident: Incident, participant: Pa
 
     if participant:
         select_block = {
-            "block_id": UpdateParticipantBlockFields.participant,
+            "block_id": UpdateParticipantBlockFields.participant.value,
             "type": "input",
             "element": {
                 "type": "static_select",
                 "placeholder": {"type": "plain_text", "text": "Select Participant"},
                 "options": participant_options,
                 "initial_option": selected_option,
-                "action_id": UpdateParticipantBlockFields.participant,
+                "action_id": UpdateParticipantBlockFields.participant.value,
             },
             "label": {"type": "plain_text", "text": "Participant"},
         }
 
     else:
         select_block = {
-            "block_id": UpdateParticipantBlockFields.participant,
+            "block_id": UpdateParticipantBlockFields.participant.value,
             "type": "actions",
             "elements": [
                 {
@@ -492,7 +492,7 @@ def build_update_participant_blocks(incident: Incident, participant: Participant
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Submit"},
-        "callback_id": UpdateParticipantCallbacks.update_view,
+        "callback_id": UpdateParticipantCallbacks.update_view.value,
         "private_metadata": json.dumps(
             {"incident_id": str(incident.id), "channel_id": str(incident.conversation.channel_id)}
         ),
@@ -507,19 +507,19 @@ def build_update_participant_blocks(incident: Incident, participant: Participant
     if participant:
         modal_template["blocks"].append(
             {
-                "block_id": UpdateParticipantBlockFields.reason_added,
+                "block_id": UpdateParticipantBlockFields.reason_added.value,
                 "type": "input",
                 "element": {
                     "type": "plain_text_input",
                     "multiline": True,
                     "initial_value": participant.added_reason or "",
-                    "action_id": UpdateParticipantBlockFields.reason_added,
+                    "action_id": UpdateParticipantBlockFields.reason_added.value,
                 },
                 "label": {"type": "plain_text", "text": "Reason Added"},
             }
         )
 
-        modal_template["callback_id"] = UpdateParticipantCallbacks.submit_form
+        modal_template["callback_id"] = UpdateParticipantCallbacks.submit_form.value
 
     return modal_template
 
@@ -663,7 +663,7 @@ def create_update_incident_modal(
             },
             {
                 "type": "input",
-                "block_id": UpdateIncidentBlockFields.title,
+                "block_id": UpdateIncidentBlockFields.title.value,
                 "element": {
                     "type": "plain_text_input",
                     "multiline": False,
@@ -673,7 +673,7 @@ def create_update_incident_modal(
             },
             {
                 "type": "input",
-                "block_id": UpdateIncidentBlockFields.description,
+                "block_id": UpdateIncidentBlockFields.description.value,
                 "element": {
                     "type": "plain_text_input",
                     "multiline": True,
@@ -683,7 +683,7 @@ def create_update_incident_modal(
             },
             {
                 "type": "section",
-                "block_id": UpdateIncidentBlockFields.incident_type,
+                "block_id": UpdateIncidentBlockFields.incident_type.value,
                 "text": {
                     "type": "mrkdwn",
                     "text": "*Type*",
@@ -704,7 +704,7 @@ def create_update_incident_modal(
             },
             {
                 "type": "section",
-                "block_id": UpdateIncidentBlockFields.incident_priority,
+                "block_id": UpdateIncidentBlockFields.incident_priority.value,
                 "text": {
                     "type": "mrkdwn",
                     "text": "*Priority*",
@@ -725,7 +725,7 @@ def create_update_incident_modal(
             },
             {
                 "type": "section",
-                "block_id": UpdateIncidentBlockFields.status,
+                "block_id": UpdateIncidentBlockFields.status.value,
                 "text": {
                     "type": "mrkdwn",
                     "text": "*Status*",
@@ -744,22 +744,10 @@ def create_update_incident_modal(
                     "options": status_options,
                 },
             },
-            {
-                "type": "section",
-                "block_id": UpdateIncidentBlockFields.tags,
-                "text": {"type": "mrkdwn", "text": "*Tags*"},
-                "accessory": {
-                    "initial_options": selected_tags,
-                    "action_id": Menus.tags,
-                    "type": "multi_external_select",
-                    "placeholder": {"type": "plain_text", "text": "Select related tags"},
-                    "min_query_length": 3,
-                },
-            },
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Update"},
-        "callback_id": UpdateIncidentCallbacks.submit_form,
+        "callback_id": UpdateIncidentCallbacks.submit_form.value,
         "private_metadata": json.dumps(
             {
                 "incident_id": str(incident.id),
@@ -850,7 +838,7 @@ def build_update_notifications_group_blocks(incident: Incident, db_session: Sess
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Update"},
-        "callback_id": UpdateNotificationsGroupCallbacks.submit_form,
+        "callback_id": UpdateNotificationsGroupCallbacks.submit_form.value,
         "private_metadata": json.dumps(
             {"incident_id": str(incident.id), "channel_id": incident.conversation.channel_id}
         ),
@@ -867,7 +855,7 @@ def build_update_notifications_group_blocks(incident: Incident, db_session: Sess
         "label": {"type": "plain_text", "text": "Members"},
         "element": {
             "type": "plain_text_input",
-            "action_id": UpdateNotificationsGroupBlockFields.update_members,
+            "action_id": UpdateNotificationsGroupBlockFields.update_members.value,
             "multiline": True,
             "initial_value": (", ").join(members),
         },
@@ -927,8 +915,8 @@ def update_notifications_group_from_submitted_form(
     )
     updated_members = (
         parsed_form_data.get(UpdateNotificationsGroupBlockFields.update_members)
-        .replace(" ", "")
-        .split(",")
+            .replace(" ", "")
+            .split(",")
     )
 
     members_added = list(set(updated_members) - set(current_members))
@@ -969,7 +957,7 @@ def build_add_timeline_event_blocks(incident: Incident):
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Add"},
-        "callback_id": AddTimelineEventCallbacks.submit_form,
+        "callback_id": AddTimelineEventCallbacks.submit_form.value,
         "private_metadata": json.dumps(
             {"incident_id": str(incident.id), "channel_id": str(incident.conversation.channel_id)}
         ),
@@ -991,7 +979,7 @@ def build_add_timeline_event_blocks(incident: Incident):
 
     hour_picker_block = {
         "type": "input",
-        "block_id": AddTimelineEventBlockFields.hour,
+        "block_id": AddTimelineEventBlockFields.hour.value,
         "label": {"type": "plain_text", "text": "Hour"},
         "element": {
             "type": "static_select",
@@ -1010,7 +998,7 @@ def build_add_timeline_event_blocks(incident: Incident):
 
     minute_picker_block = {
         "type": "input",
-        "block_id": AddTimelineEventBlockFields.minute,
+        "block_id": AddTimelineEventBlockFields.minute.value,
         "label": {"type": "plain_text", "text": "Minute"},
         "element": {
             "type": "static_select",
@@ -1023,7 +1011,7 @@ def build_add_timeline_event_blocks(incident: Incident):
 
     timezone_block = {
         "type": "input",
-        "block_id": AddTimelineEventBlockFields.timezone,
+        "block_id": AddTimelineEventBlockFields.timezone.value,
         "label": {"type": "plain_text", "text": "Time Zone"},
         "element": {
             "type": "radio_buttons",
@@ -1047,11 +1035,11 @@ def build_add_timeline_event_blocks(incident: Incident):
 
     description_block = {
         "type": "input",
-        "block_id": AddTimelineEventBlockFields.description,
+        "block_id": AddTimelineEventBlockFields.description.value,
         "label": {"type": "plain_text", "text": "Description"},
         "element": {
             "type": "plain_text_input",
-            "action_id": AddTimelineEventBlockFields.description,
+            "action_id": AddTimelineEventBlockFields.description.value,
             "placeholder": {"type": "plain_text", "text": "A description of the event"},
         },
         "optional": False,
@@ -1129,7 +1117,7 @@ def add_timeline_event_from_submitted_form(
         client=slack_client,
         conversation_id=channel_id,
         user_id=user_id,
-        text="Event sucessfully added to timeline.",
+        text="Event successfully added to timeline.",
     )
 
 
@@ -1153,7 +1141,7 @@ def build_workflow_blocks(
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Run"},
-        "callback_id": RunWorkflowCallbacks.update_view,
+        "callback_id": RunWorkflowCallbacks.update_view.value,
         "private_metadata": json.dumps(
             {"incident_id": str(incident.id), "channel_id": incident.conversation.channel_id}
         ),
@@ -1163,7 +1151,8 @@ def build_workflow_blocks(
     workflow_options = []
     for w in workflows:
         # don't show disable workflows or workflows with disabled plugins
-        if not w.plugin.enabled or not w.enabled:
+        # if not w.plugin.enabled or not w.enabled:
+        if not w.enabled:
             continue
 
         current_option = {
@@ -1182,7 +1171,7 @@ def build_workflow_blocks(
 
     if selected_workflow:
         select_block = {
-            "block_id": RunWorkflowBlockFields.workflow_select,
+            "block_id": RunWorkflowBlockFields.workflow_select.value,
             "type": "input",
             "element": {
                 "type": "static_select",
@@ -1192,13 +1181,13 @@ def build_workflow_blocks(
                 },
                 "initial_option": selected_option,
                 "options": workflow_options,
-                "action_id": RunWorkflowBlockFields.workflow_select,
+                "action_id": RunWorkflowBlockFields.workflow_select.value,
             },
             "label": {"type": "plain_text", "text": "Workflow"},
         }
     else:
         select_block = {
-            "block_id": RunWorkflowBlockFields.workflow_select,
+            "block_id": RunWorkflowBlockFields.workflow_select.value,
             "type": "actions",
             "elements": [
                 {
@@ -1269,6 +1258,8 @@ def update_workflow_modal(
     slack_client=None,
 ):
     """Pushes an updated view to the run workflow modal."""
+    log.info("*** Updating workflow modal")
+
     trigger_id = action["trigger_id"]
     incident_id = action["view"]["private_metadata"]["incident_id"]
     workflow_id = action["actions"][0]["selected_option"]["value"]
@@ -1290,12 +1281,12 @@ def update_workflow_modal(
 
     modal_template["blocks"].append(
         {
-            "block_id": RunWorkflowBlockFields.run_reason,
+            "block_id": RunWorkflowBlockFields.run_reason.value,
             "type": "input",
             "element": {
                 "type": "plain_text_input",
                 "multiline": True,
-                "action_id": RunWorkflowBlockFields.run_reason,
+                "action_id": RunWorkflowBlockFields.run_reason.value,
             },
             "label": {"type": "plain_text", "text": "Run Reason"},
         },
@@ -1327,7 +1318,7 @@ def update_workflow_modal(
             }
         )
 
-    modal_template["callback_id"] = RunWorkflowCallbacks.submit_form
+    modal_template["callback_id"] = RunWorkflowCallbacks.submit_form.value
 
     dispatch_slack_service.update_modal_with_user(
         client=slack_client,
@@ -1377,16 +1368,25 @@ def run_workflow_submitted_form(
             parameters=named_params,
         ),
     )
+
     params.update(
-        {"incident_id": incident.id, "incident_name": incident.name, "instance_id": instance.id}
+        {"incident_id": incident.id, "incident_name": incident.name, "instance_id": instance.id,
+         "db_session": db_session, "conversation_id": incident.conversation.channel_id,
+         "project_id": workflow.project_id}
     )
 
-    workflow.plugin.instance.run(workflow.resource_id, params)
+    plugin = plugin_service.get_active_instance(db_session=db_session,
+                                                project_id=workflow.project_id,
+                                                plugin_type="workflow")
+
+    if plugin:
+        plugin.instance.run(workflow.name, workflow.resource_id, params)
 
     send_workflow_notification(
         incident.conversation.channel_id,
         INCIDENT_WORKFLOW_CREATED_NOTIFICATION,
         db_session,
+        workflow.project_id,
         instance_creator_name=instance.creator.individual.name,
         workflow_name=instance.workflow.name,
         workflow_description=instance.workflow.description,
@@ -1411,7 +1411,7 @@ def build_rating_feedback_blocks(incident: Incident):
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Submit"},
-        "callback_id": IncidentRatingFeedbackCallbacks.submit_form,
+        "callback_id": IncidentRatingFeedbackCallbacks.submit_form.value,
         "private_metadata": json.dumps(
             {"incident_id": str(incident.id), "channel_id": incident.conversation.channel_id}
         ),
@@ -1425,7 +1425,7 @@ def build_rating_feedback_blocks(incident: Incident):
 
     rating_picker_block = {
         "type": "input",
-        "block_id": IncidentRatingFeedbackBlockFields.rating,
+        "block_id": IncidentRatingFeedbackBlockFields.rating.value,
         "label": {"type": "plain_text", "text": "Rate your experience"},
         "element": {
             "type": "static_select",
@@ -1438,11 +1438,11 @@ def build_rating_feedback_blocks(incident: Incident):
 
     feedback_block = {
         "type": "input",
-        "block_id": IncidentRatingFeedbackBlockFields.feedback,
+        "block_id": IncidentRatingFeedbackBlockFields.feedback.value,
         "label": {"type": "plain_text", "text": "Give us feedback"},
         "element": {
             "type": "plain_text_input",
-            "action_id": IncidentRatingFeedbackBlockFields.feedback,
+            "action_id": IncidentRatingFeedbackBlockFields.feedback.value,
             "placeholder": {
                 "type": "plain_text",
                 "text": "How would you describe your experience?",
@@ -1455,14 +1455,14 @@ def build_rating_feedback_blocks(incident: Incident):
 
     anonymous_checkbox_block = {
         "type": "input",
-        "block_id": IncidentRatingFeedbackBlockFields.anonymous,
+        "block_id": IncidentRatingFeedbackBlockFields.anonymous.value,
         "label": {
             "type": "plain_text",
             "text": "Check the box if you wish to provide your feedback anonymously",
         },
         "element": {
             "type": "checkboxes",
-            "action_id": IncidentRatingFeedbackBlockFields.anonymous,
+            "action_id": IncidentRatingFeedbackBlockFields.anonymous.value,
             "options": [
                 {
                     "value": "anonymous",
@@ -1483,12 +1483,17 @@ def create_rating_feedback_modal(
     user_email: str,
     channel_id: str,
     incident_id: int,
-    action: dict,
+    action: dict = None,
+    command: dict = None,
     db_session=None,
     slack_client=None,
 ):
     """Creates a modal for rating and providing feedback about an incident."""
-    trigger_id = action["trigger_id"]
+
+    if action:
+        trigger_id = action["trigger_id"]
+    else:
+        trigger_id = command["trigger_id"]
 
     incident = incident_service.get(db_session=db_session, incident_id=incident_id)
 
@@ -1525,7 +1530,11 @@ def rating_feedback_from_submitted_form(
 
     feedback = parsed_form_data.get(IncidentRatingFeedbackBlockFields.feedback)
     rating = parsed_form_data.get(IncidentRatingFeedbackBlockFields.rating)["value"]
-    anonymous = parsed_form_data.get(IncidentRatingFeedbackBlockFields.anonymous)["value"]
+
+    if parsed_form_data.get(IncidentRatingFeedbackBlockFields.anonymous):
+        anonymous = parsed_form_data.get(IncidentRatingFeedbackBlockFields.anonymous)[0]
+    else:
+        anonymous = ""
 
     feedback_in = FeedbackCreate(rating=rating, feedback=feedback, project=incident.project)
     feedback = feedback_service.create(db_session=db_session, feedback_in=feedback_in)

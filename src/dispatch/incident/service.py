@@ -158,7 +158,6 @@ def get_all_by_incident_type(
 def create(
     *,
     db_session,
-    project: str,
     incident_priority: str,
     incident_type: str,
     reporter_email: str,
@@ -166,19 +165,20 @@ def create(
     status: str,
     description: str,
     tags: List[dict],
+    project: str = None,
     visibility: str = None,
 ) -> Incident:
     """Creates a new incident."""
     if not project:
         project = project_service.get_default(db_session=db_session)
         if not project:
-            raise Exception("No project specificed and no default has been defined.")
+            raise Exception("No project specified and no default has been defined.")
     else:
         project = project_service.get_by_name(db_session=db_session, name=project["name"])
 
     # We get the incident type by name
     if not incident_type:
-        incident_type = incident_type_service.get_default(db_session=db_session)
+        incident_type = incident_type_service.get_default(db_session=db_session, project_id=project.id)
         if not incident_type:
             raise Exception("No incident type specified and no default has been defined.")
     else:

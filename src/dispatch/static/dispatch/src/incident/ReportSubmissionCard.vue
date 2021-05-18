@@ -52,7 +52,7 @@
                 <incident-priority-select :project="project" v-model="incident_priority" />
               </v-flex>
               <v-flex xs12>
-                <tag-filter-combobox :project="project" v-model="tags" label="Tags" />
+                <tag-filter-combobox :project="project" v-model="tag" label="Tags" />
               </v-flex>
               <v-flex xs12>
                 <v-checkbox v-model="trackingOnly" label="Tracking Only">

@@ -72,7 +72,11 @@ export default {
           })
         } else {
           // TODO support other models
-          subFilter.push({ model: "Incident", field: key, op: "==", value: value })
+          if (value !== "workflow") {
+            subFilter.push({ model: "Incident", field: key, op: "==", value: value })
+          } else {
+            subFilter.push({ field: key, op: "==", value: value })
+          }
         }
       })
       if (subFilter.length > 0) {

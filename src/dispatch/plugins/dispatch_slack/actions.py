@@ -14,13 +14,14 @@ from dispatch.plugins.dispatch_slack import service as dispatch_slack_service
 from dispatch.report import flows as report_flows
 from dispatch.report.models import ExecutiveReportCreate, TacticalReportCreate
 from dispatch.task import service as task_service
-from dispatch.task.models import TaskStatus
+from dispatch.task.models import TaskStatus, TaskCreate
 
 from .config import (
     SLACK_COMMAND_ASSIGN_ROLE_SLUG,
     SLACK_COMMAND_ENGAGE_ONCALL_SLUG,
     SLACK_COMMAND_REPORT_EXECUTIVE_SLUG,
     SLACK_COMMAND_REPORT_TACTICAL_SLUG,
+    SLACK_COMMAND_ASSIGN_TASK_SLUG,
 )
 
 from .modals import (
@@ -33,6 +34,8 @@ from .modals import (
 )
 from .service import get_user_email
 from .decorators import slack_background_task
+from ...messaging.strings import INCIDENT_TASK_NEW_NOTIFICATION
+from ...task.flows import send_task_notification
 
 
 def base64_decode(input: str):
@@ -42,6 +45,9 @@ def base64_decode(input: str):
 
 async def handle_slack_action(*, db_session, client, request, background_tasks):
     """Handles slack action message."""
+    print(f"** {request}")
+    print(f"** {request['type']}")
+
     # We resolve the user's email
     user_id = request["user"]["id"]
     user_email = await dispatch_slack_service.get_user_email_async(client, user_id)
@@ -50,6 +56,8 @@ async def handle_slack_action(*, db_session, client, request, background_tasks):
 
     # When there are no exceptions within the dialog submission, your app must respond with 200 OK with an empty body.
     response_body = {}
+    if request["type"] == "view":
+        handle_modal_action(request, background_tasks)
     if request["type"] == "view_submission":
         handle_modal_action(request, background_tasks)
         # For modals we set "response_action" to "clear" to close all views in the modal.
@@ -79,13 +87,15 @@ def add_user_to_conversation(
         message = "Sorry, we cannot add you to this incident it does not exist."
         dispatch_slack_service.send_ephemeral_message(slack_client, channel_id, user_id, message)
     elif incident.status == IncidentStatus.closed:
-        message = f"Sorry, we cannot add you to a closed incident. Please reach out to the incident commander ({incident.commander.individual.name}) for details."
+        message = f"Sorry, we cannot add you to a closed incident. " \
+                  f"Please reach out to the incident commander ({incident.commander.individual.name}) for details."
         dispatch_slack_service.send_ephemeral_message(slack_client, channel_id, user_id, message)
     else:
         dispatch_slack_service.add_users_to_conversation(
             slack_client, incident.conversation.channel_id, [user_id]
         )
-        message = f"Success! We've added you to incident {incident.name}. Please check your side bar for the new channel."
+        message = f"Success! We've added you to incident {incident.name}. " \
+                  f"Please check your side bar for the new channel."
         dispatch_slack_service.send_ephemeral_message(slack_client, channel_id, user_id, message)
 
 
@@ -258,6 +268,44 @@ def handle_assign_role_action(
     incident_flows.incident_assign_role_flow(user_email, incident_id, assignee_email, assignee_role)
 
 
+@slack_background_task
+def handle_assign_task_action(
+    user_id: str,
+    user_email: str,
+    channel_id: str,
+    incident_id: int,
+    action: dict,
+    db_session=None,
+    slack_client=None,
+):
+    """Massages slack dialog data into something that Dispatch can use."""
+    assignee_user_id = action["submission"]["participant"]
+    description = action["submission"]["task"]
+    assignee_email = get_user_email(client=slack_client, user_id=assignee_user_id)
+
+    incident = incident_service.get(db_session=db_session, incident_id=incident_id)
+
+    task = TaskCreate()
+    task.tickets = []
+    task.incident = incident
+    task.creator = {"individual": {"email": user_email}}
+    task.owner = {"individual": {"email": assignee_email}}
+    task.assignees = [
+        {"individual": {"email": assignee_email}}
+    ]
+    task.description = description
+
+    task_service.create(db_session=db_session, task_in=task)
+    send_task_notification(
+        incident,
+        INCIDENT_TASK_NEW_NOTIFICATION,
+        task.assignees,
+        task.description,
+        task.weblink,
+        db_session,
+    )
+
+
 def dialog_action_functions(action: str):
     """Interprets the action and routes it to the appropriate function."""
     action_mappings = {
@@ -265,6 +313,7 @@ def dialog_action_functions(action: str):
         SLACK_COMMAND_ENGAGE_ONCALL_SLUG: [handle_engage_oncall_action],
         SLACK_COMMAND_REPORT_EXECUTIVE_SLUG: [handle_executive_report_create],
         SLACK_COMMAND_REPORT_TACTICAL_SLUG: [handle_tactical_report_create],
+        SLACK_COMMAND_ASSIGN_TASK_SLUG: [handle_assign_task_action]
     }
 
     # this allows for unique action blocks e.g. invite-user or invite-user-1, etc
@@ -276,6 +325,7 @@ def dialog_action_functions(action: str):
 
 def block_action_functions(action: str):
     """Interprets the action and routes it to the appropriate function."""
+    print(f"** {action}")
     action_mappings = {
         ConversationButtonActions.invite_user.value: [add_user_to_conversation],
         ConversationButtonActions.provide_feedback.value: [create_rating_feedback_modal],
@@ -283,11 +333,9 @@ def block_action_functions(action: str):
         # Note these are temporary for backward compatibility of block ids and should be remove in a future release
         "ConversationButtonActions.invite_user": [add_user_to_conversation],
         "ConversationButtonActions.provide_feedback": [create_rating_feedback_modal],
-        "ConversationButtonActions.update_task_status": [
-            update_task_status,
-        ],
-        UpdateParticipantCallbacks.update_view: [update_update_participant_modal],
-        RunWorkflowCallbacks.update_view: [update_workflow_modal],
+        "ConversationButtonActions.update_task_status": [update_task_status],
+        UpdateParticipantCallbacks.update_view.value: [update_update_participant_modal],
+        RunWorkflowCallbacks.update_view.value: [update_workflow_modal],
     }
 
     # this allows for unique action blocks e.g. invite-user or invite-user-1, etc
@@ -316,12 +364,20 @@ def handle_dialog_action(action: dict, background_tasks: BackgroundTasks, db_ses
 
 def handle_block_action(action: dict, background_tasks: BackgroundTasks):
     """Handles a standalone block action."""
-    view_data = action["view"]
-    view_data["private_metadata"] = json.loads(view_data["private_metadata"])
+    view_data = action.get("view")
+    action_id = None
 
-    incident_id = view_data["private_metadata"].get("incident_id")
-    channel_id = view_data["private_metadata"].get("channel_id")
-    action_id = action["actions"][0]["block_id"]
+    if view_data:
+        view_data["private_metadata"] = json.loads(view_data["private_metadata"])
+        incident_id = view_data["private_metadata"].get("incident_id")
+        channel_id = view_data["private_metadata"].get("channel_id")
+        action_id = view_data["callback_id"]
+    else:
+        incident_id = action["actions"][0]["value"]
+        channel_id = action["container"]["channel_id"]
+
+    if not action_id:
+        action_id = action["actions"][0]["block_id"]
 
     user_id = action["user"]["id"]
     user_email = action["user"]["email"]

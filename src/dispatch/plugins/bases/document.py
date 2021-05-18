@@ -27,3 +27,10 @@ class DocumentPlugin(Plugin):
 
     def move(self, key, **kwargs):
         raise NotImplementedError
+
+    def create_review(self, key, **kwargs):
+        raise NotImplementedError
+
+    def update_review_sheet(self, key, **kwargs):
+        raise NotImplementedError
+

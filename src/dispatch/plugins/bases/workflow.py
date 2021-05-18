@@ -16,5 +16,5 @@ class WorkflowPlugin(Plugin):
     def get_instance(self, workflow_id: str, instance_id: str, **kwargs):
         raise NotImplementedError
 
-    def run(self, workflow_id: str, params: dict, **kwargs):
+    def run(self, workflow_name: str, workflow_id: str, params: dict, **kwargs):
         raise NotImplementedError

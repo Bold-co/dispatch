@@ -82,10 +82,13 @@ def create(*, db_session, individual_contact_in: IndividualContactCreate) -> Ind
         db_session=db_session, name=individual_contact_in.project.name
     )
 
-    filters = [
-        search_filter_service.get(db_session=db_session, search_filter_id=f.id)
-        for f in individual_contact_in.filters
-    ]
+    if individual_contact_in.filters:
+        filters = [
+            search_filter_service.get(db_session=db_session, search_filter_id=f.id)
+            for f in individual_contact_in.filters
+        ]
+    else:
+        filters = []
 
     contact = IndividualContact(
         **individual_contact_in.dict(exclude={"project", "filters"}),

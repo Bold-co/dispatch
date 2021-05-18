@@ -118,7 +118,7 @@ def create(*, db_session, task_in: TaskCreate) -> Task:
         owner=owner,
         assignees=assignees,
         incident=incident,
-        tickets=tickets,
+        tickets=tickets
     )
 
     event_service.log(

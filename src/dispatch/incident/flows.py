@@ -67,7 +67,7 @@ from .messaging import (
     send_incident_welcome_participant_messages,
 )
 from .models import Incident, IncidentStatus
-
+from ..common.utils.date import date_to_tz
 
 log = logging.getLogger(__name__)
 
@@ -85,13 +85,6 @@ def get_incident_participants(incident: Incident, db_session: SessionLocal):
             individual_contacts, team_contacts = plugin.instance.get(
                 incident,
                 db_session=db_session,
-            )
-
-            event_service.log(
-                db_session=db_session,
-                source=plugin.plugin.title,
-                description="Incident participants resolved",
-                incident_id=incident.id,
             )
 
     return individual_contacts, team_contacts
@@ -211,13 +204,6 @@ def create_participant_groups(
         }
     )
 
-    event_service.log(
-        db_session=db_session,
-        source=plugin.plugin.title,
-        description="Tactical and notification groups created",
-        incident_id=incident.id,
-    )
-
     return tactical_group, notification_group
 
 
@@ -229,13 +215,6 @@ def delete_participant_groups(incident: Incident, db_session: SessionLocal):
     plugin.instance.delete(email=incident.tactical_group.email)
     plugin.instance.delete(email=incident.notifications_group.email)
 
-    event_service.log(
-        db_session=db_session,
-        source=plugin.plugin.title,
-        description="Tactical and notification groups deleted",
-        incident_id=incident.id,
-    )
-
 
 def create_conference(incident: Incident, participants: List[str], db_session: SessionLocal):
     """Create external conference room."""
@@ -245,13 +224,6 @@ def create_conference(incident: Incident, participants: List[str], db_session: S
     conference = plugin.instance.create(incident.name, participants=participants)
 
     conference.update({"resource_type": plugin.plugin.slug, "resource_id": conference["id"]})
-
-    event_service.log(
-        db_session=db_session,
-        source=plugin.plugin.title,
-        description="Incident conference created",
-        incident_id=incident.id,
-    )
 
     return conference
 
@@ -265,13 +237,6 @@ def delete_conference(incident: Incident, db_session: SessionLocal):
         db_session=db_session, project_id=incident.project.id, plugin_type="conference"
     )
     plugin.instance.delete(conference.conference_id)
-
-    event_service.log(
-        db_session=db_session,
-        source=plugin.plugin.title,
-        description="Incident conference deleted",
-        incident_id=incident.id,
-    )
 
 
 def create_incident_storage(
@@ -324,13 +289,6 @@ def create_collaboration_documents(incident: Incident, db_session: SessionLocal)
 
             collab_documents.append(document)
 
-            event_service.log(
-                db_session=db_session,
-                source=plugin.plugin.title,
-                description="Incident investigation document created",
-                incident_id=incident.id,
-            )
-
         sheet = None
         template = document_service.get_incident_investigation_sheet_template(db_session=db_session)
         if template:
@@ -348,12 +306,6 @@ def create_collaboration_documents(incident: Incident, db_session: SessionLocal)
                 }
             )
             collab_documents.append(sheet)
-            event_service.log(
-                db_session=db_session,
-                source=plugin.plugin.title,
-                description="Incident investigation sheet created",
-                incident_id=incident.id,
-            )
 
         plugin.instance.create_file(incident.storage.resource_id, "logs")
         plugin.instance.create_file(incident.storage.resource_id, "screengrabs")
@@ -386,10 +338,11 @@ def set_conversation_topic(incident: Incident, db_session: SessionLocal):
         return
 
     conversation_topic = (
-        f":helmet_with_white_cross: {incident.commander.individual.name}, {incident.commander.team} - "
+        f":fire: {incident.title} :fire: - "
         f"Type: {incident.incident_type.name} - "
         f"Priority: {incident.incident_priority.name} - "
-        f"Status: {incident.status}"
+        f"Status: {incident.status} - "
+        f":helmet_with_white_cross: {incident.commander.individual.name}"
     )
     plugin = plugin_service.get_active_instance(
         db_session=db_session, project_id=incident.project.id, plugin_type="conversation"
@@ -474,7 +427,7 @@ def incident_create_closed_flow(*, incident_id: int, checkpoint: str = None, db_
 
 
 # TODO create some ability to checkpoint
-# We could use the model itself as the checkpoint, commiting resources as we go
+# We could use the model itself as the checkpoint, committing resources as we go
 # Then checking for the existence of those resources before creating them for
 # this incident.
 @background_task
@@ -518,12 +471,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                     group_service.create(db_session=db_session, group_in=group_in)
                 )
 
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description="Tactical and notification groups added to incident",
-                incident_id=incident.id,
-            )
         except Exception as e:
             event_service.log(
                 db_session=db_session,
@@ -558,12 +505,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                 weblink=storage["weblink"],
             )
 
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description="Storage added to incident",
-                incident_id=incident.id,
-            )
         except Exception as e:
             event_service.log(
                 db_session=db_session,
@@ -588,12 +529,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                     document_service.create(db_session=db_session, document_in=document_in)
                 )
 
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description="Documents added to incident",
-                incident_id=incident.id,
-            )
         except Exception as e:
             event_service.log(
                 db_session=db_session,
@@ -627,12 +562,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                 db_session=db_session, conference_in=conference_in
             )
 
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description="Conference added to incident",
-                incident_id=incident.id,
-            )
         except Exception as e:
             event_service.log(
                 db_session=db_session,
@@ -659,13 +588,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
             )
             incident.conversation = conversation_service.create(
                 db_session=db_session, conversation_in=conversation_in
-            )
-
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description="Conversation added to incident",
-                incident_id=incident.id,
             )
 
             # we set the conversation topic
@@ -697,6 +619,8 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                     type=incident.incident_type.name,
                     title=incident.title,
                     description=incident.description,
+                    stable_at=date_to_tz(datetime.now()),
+                    reported_at=date_to_tz(incident.reported_at),
                     commander_fullname=incident.commander.individual.name,
                     conversation_weblink=resolve_attr(incident, "conversation.weblink"),
                     document_weblink=resolve_attr(incident, "incident_document.weblink"),
@@ -742,21 +666,7 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
             individual.email, incident.id, service_id=service_id, db_session=db_session
         )
 
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description="Incident participants added to incident",
-        incident_id=incident.id,
-    )
-
     send_incident_created_notifications(incident, db_session)
-
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description="Incident notifications sent",
-        incident_id=incident.id,
-    )
 
     # we send a message to the incident commander with tips on how to manage the incident
     send_incident_management_help_tips_message(incident, db_session)
@@ -798,10 +708,11 @@ def incident_stable_status_flow(incident: Incident, db_session=None):
     # we create a copy of the incident review document template and we move it to the incident storage
     incident_review_document_name = f"{incident.name} - Post Incident Review Document"
     template = document_service.get_incident_review_template(db_session=db_session)
+    tracking = document_service.get_incident_tracking_sheet(db_session=db_session)
 
     # incident review document is optional
     if not template:
-        log.warning("No incident review template specificed.")
+        log.warning("No incident review template specified.")
         return
 
     incident_review_document = storage_plugin.instance.copy_file(
@@ -840,18 +751,13 @@ def incident_stable_status_flow(incident: Incident, db_session=None):
         document_service.create(db_session=db_session, document_in=document_in)
     )
 
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description="Incident review document added to incident",
-        incident_id=incident.id,
-    )
-
     # we update the incident review document
     document_plugin = plugin_service.get_active_instance(
         db_session=db_session, project_id=incident.project.id, plugin_type="document"
     )
+
     if document_plugin:
+        document_plugin.configuration
         document_plugin.instance.update(
             incident.incident_review_document.resource_id,
             name=incident.name,
@@ -861,6 +767,8 @@ def incident_stable_status_flow(incident: Incident, db_session=None):
             title=incident.title,
             description=incident.description,
             commander_fullname=incident.commander.individual.name,
+            stable_at=date_to_tz(incident.stable_at),
+            reported_at=date_to_tz(incident.reported_at),
             conversation_weblink=resolve_attr(incident, "conversation.weblink"),
             document_weblink=resolve_attr(incident, "incident_document.weblink"),
             storage_weblink=resolve_attr(incident, "storage.weblink"),
@@ -868,6 +776,22 @@ def incident_stable_status_flow(incident: Incident, db_session=None):
             conference_weblink=resolve_attr(incident, "conference.weblink"),
             conference_challenge=resolve_attr(incident, "conference.challenge"),
         )
+        # Only creates the review document
+        print(f"** Plugin config: {document_plugin.configuration}")
+        print(f"** Priority: {incident.incident_priority.name}")
+
+        document_plugin.instance.create_review(
+            incident.incident_review_document.resource_id,
+            incident=incident,
+            db_session=db_session
+        )
+        # Updates the review sheet
+        if tracking:
+            document_plugin.instance.update_review_sheet(
+                tracking.resource_id,
+                incident=incident,
+                db_session=db_session
+            )
     else:
         log.warning("No document plugin enabled, could not update template.")
 
@@ -1209,6 +1133,11 @@ def incident_add_or_reactivate_participant_flow(
     db_session=None,
 ) -> Participant:
     """Runs the add or reactivate incident participant flow."""
+
+    if not incident_id:
+        log.debug("*** There is not incident associated with the request.")
+        return
+
     incident = incident_service.get(db_session=db_session, incident_id=incident_id)
 
     if service_id:
@@ -1222,7 +1151,7 @@ def incident_add_or_reactivate_participant_flow(
             return
 
     participant = participant_service.get_by_incident_id_and_email(
-        db_session=db_session, incident_id=incident.id, email=user_email
+        db_session=db_session, incident_id=incident_id, email=user_email
     )
 
     if participant:

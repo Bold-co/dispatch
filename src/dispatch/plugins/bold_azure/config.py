@@ -1,0 +1,9 @@
+from dispatch.config import config, Secret
+
+# AZURE
+AZURE_DEVOPS_ORGANIZATION = config("AZURE_DEVOPS_ORGANIZATION")
+AZURE_DEVOPS_PROJECT = config("AZURE_DEVOPS_PROJECT")
+AZURE_DEVOPS_PAT = config("AZURE_DEVOPS_PAT", cast=Secret)
+AZURE_DEVOPS_PREFIX = config("AZURE_DEVOPS_PREFIX", default="INC-")
+AZURE_DEVOPS_AREA = config("AZURE_DEVOPS_AREA", default=f"{AZURE_DEVOPS_PROJECT}/incidents")
+

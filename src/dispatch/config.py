@@ -87,7 +87,9 @@ ENV = config("ENV", default="local")
 ENV_TAG_LIST = config("ENV_TAGS", cast=CommaSeparatedStrings, default="")
 ENV_TAGS = get_env_tags(ENV_TAG_LIST)
 
-DISPATCH_UI_URL = config("DISPATCH_UI_URL", default="http://localhost:8000 ")
+TIME_ZONE = config("TIME_ZONE", default="America/Bogota")
+
+DISPATCH_UI_URL = config("DISPATCH_UI_URL", default="http://localhost:8000")
 DISPATCH_HELP_EMAIL = config("DISPATCH_HELP_EMAIL", default="help@example.com")
 DISPATCH_HELP_SLACK_CHANNEL = config("DISPATCH_HELP_SLACK_CHANNEL", default="#general")
 
@@ -182,7 +184,8 @@ if not INCIDENT_ONCALL_SERVICE_ID:
     )
     if INCIDENT_DAILY_SUMMARY_ONCALL_SERVICE_ID:
         log.warn(
-            "INCIDENT_DAILY_SUMMARY_ONCALL_SERVICE_ID has been deprecated. Please use INCIDENT_ONCALL_SERVICE_ID instead."
+            "INCIDENT_DAILY_SUMMARY_ONCALL_SERVICE_ID has been deprecated. "
+            "Please use INCIDENT_ONCALL_SERVICE_ID instead."
         )
         INCIDENT_ONCALL_SERVICE_ID = INCIDENT_DAILY_SUMMARY_ONCALL_SERVICE_ID
 
@@ -212,6 +215,9 @@ INCIDENT_RESOURCE_INVESTIGATION_SHEET = config(
 INCIDENT_RESOURCE_INCIDENT_REVIEW_DOCUMENT = config(
     "INCIDENT_RESOURCE_INCIDENT_REVIEW_DOCUMENT", default="dispatch-incident-review-document"
 )
+INCIDENT_TRACKING_SHEET = config(
+    "INCIDENT_TRACKING_SHEET", default="dispatch-incident-tracking-sheet"
+)
 INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT = config(
     "INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT", default="dispatch-executive-report-document"
 )
@@ -229,3 +235,8 @@ INCIDENT_RESOURCE_INCIDENT_TASK = config(
 # Incident Cost Configuration
 ANNUAL_COST_EMPLOYEE = config("ANNUAL_COST_EMPLOYEE", cast=int, default="650000")
 BUSINESS_HOURS_YEAR = config("BUSINESS_HOURS_YEAR", cast=int, default="2080")
+
+# Tracking
+INCIDENT_TRACKING_SHEET_RANGE = config(
+    "INCIDENT_TRACKING_SHEET_RANGE", default="Sheet1!A1:A1"
+)

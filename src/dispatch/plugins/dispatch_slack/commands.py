@@ -40,6 +40,8 @@ from .config import (
     SLACK_COMMAND_UPDATE_PARTICIPANT_SLUG,
     SLACK_COMMAND_RUN_WORKFLOW_SLUG,
     SLACK_COMMAND_LIST_WORKFLOWS_SLUG,
+    SLACK_COMMAND_ADD_FEEDBACK_SLUG,
+    SLACK_COMMAND_ASSIGN_TASK_SLUG,
 )
 
 from .decorators import slack_background_task
@@ -51,6 +53,7 @@ from .modals import (
     create_update_notifications_group_modal,
     create_update_participant_modal,
     create_run_workflow_modal,
+    create_rating_feedback_modal,
 )
 
 from .dialogs import (
@@ -58,6 +61,7 @@ from .dialogs import (
     create_engage_oncall_dialog,
     create_executive_report_dialog,
     create_tactical_report_dialog,
+    create_assign_task_dialog,
 )
 
 from .messaging import (
@@ -73,7 +77,11 @@ log = logging.getLogger(__name__)
 
 def base64_encode(input: str):
     """Returns a b64 encoded string."""
-    return base64.b64encode(input.encode("ascii")).decode("ascii")
+    if input:
+        output = base64.b64encode(input.encode("ascii")).decode("ascii")
+    else:
+        output = ""
+    return output
 
 
 def check_command_restrictions(
@@ -81,7 +89,7 @@ def check_command_restrictions(
 ) -> bool:
     """Checks the current user's role to determine what commands they are allowed to run."""
     # some commands are sensitive and we only let non-participants execute them
-    command_permissons = {
+    command_permissions = {
         SLACK_COMMAND_UPDATE_INCIDENT_SLUG: [
             ParticipantRoleType.incident_commander,
             ParticipantRoleType.scribe,
@@ -103,7 +111,7 @@ def check_command_restrictions(
     }
 
     # no permissions have been defined
-    if command not in command_permissons.keys():
+    if command not in command_permissions.keys():
         return True
 
     participant = participant_service.get_by_incident_id_and_email(
@@ -112,7 +120,7 @@ def check_command_restrictions(
 
     # if any required role is active, allow command
     for current_role in participant.current_roles:
-        for allowed_role in command_permissons[command]:
+        for allowed_role in command_permissions[command]:
             if current_role.role == allowed_role:
                 return True
 
@@ -136,6 +144,8 @@ def command_functions(command: str):
         SLACK_COMMAND_UPDATE_INCIDENT_SLUG: [create_update_incident_modal],
         SLACK_COMMAND_RUN_WORKFLOW_SLUG: [create_run_workflow_modal],
         SLACK_COMMAND_LIST_WORKFLOWS_SLUG: [list_workflows],
+        SLACK_COMMAND_ASSIGN_TASK_SLUG: [create_assign_task_dialog],
+        SLACK_COMMAND_ADD_FEEDBACK_SLUG: [create_rating_feedback_modal],
     }
 
     return command_mappings.get(command, [])
@@ -465,7 +475,7 @@ def list_participants(
     )
 
 
-@background_task
+@slack_background_task
 def list_incidents(
     user_id: str,
     user_email: str,
@@ -477,6 +487,7 @@ def list_incidents(
 ):
     """Returns the list of current active and stable incidents,
     and closed incidents in the last 24 hours."""
+
     incidents = []
 
     # scopes reply to the current incident's project

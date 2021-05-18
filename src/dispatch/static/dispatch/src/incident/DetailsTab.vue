@@ -111,7 +111,7 @@
         </v-row>
       </v-flex>
       <v-flex xs12>
-        <tag-filter-combobox label="Tags" v-model="tags" model="incident" :model-id="id" />
+        <tag-filter-combobox label="Tags" v-model="tag" model="incident" :model-id="id" />
       </v-flex>
       <v-flex xs12>
         <incident-filter-combobox label="Duplicates" v-model="duplicates" :project="project" />

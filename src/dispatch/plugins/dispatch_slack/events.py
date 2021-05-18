@@ -1,5 +1,6 @@
 import arrow
 import datetime
+import logging
 
 from typing import List
 from pydantic import BaseModel
@@ -21,7 +22,7 @@ from .config import (
 from .service import get_user_email
 
 slack_client = dispatch_slack_service.create_slack_client()
-
+log = logging.getLogger(__name__)
 
 class EventBodyItem(BaseModel):
     """Body item of the Slack event."""
@@ -211,11 +212,13 @@ def member_joined_channel(
     db_session=None,
 ):
     """Handles the member_joined_channel slack event."""
+    log.info(f"Joining {user_email}")
+
     participant = incident_flows.incident_add_or_reactivate_participant_flow(
         user_email=user_email, incident_id=incident_id, db_session=db_session
     )
 
-    if event.event.inviter:
+    if participant and event.event.inviter:
         # we update the participant's metadata
         if not dispatch_slack_service.is_user(event.event.inviter):
             # we default to the incident commander when we don't know how the user was added

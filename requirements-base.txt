@@ -14,8 +14,10 @@ arrow==1.1.0
     # via -r requirements-base.in
 async-timeout==3.0.1
     # via aiohttp
-attrs==20.3.0
-    # via aiohttp
+attrs==19.3.0
+    # via
+    #   aiohttp
+    #   codaio
 bcrypt==3.2.0
     # via -r requirements-base.in
 blis==0.7.4
@@ -50,8 +52,12 @@ click==7.1.2
     # via
     #   -r requirements-base.in
     #   uvicorn
+codaio==0.6.5
+    # via -r requirements-base.in
 cryptography==3.4.6
-    # via oauthlib
+    # via
+    #   oauthlib
+    #   pyopenssl
 cssselect==1.1.0
     # via premailer
 cssutils==2.2.0
@@ -64,7 +70,9 @@ cymem==2.0.5
     #   spacy
     #   thinc
 decorator==4.4.2
-    # via validators
+    # via
+    #   codaio
+    #   validators
 defusedxml==0.7.1
     # via jira
 dnspython==2.1.0
@@ -75,6 +83,8 @@ email-validator==1.1.2
     # via -r requirements-base.in
 emails==0.6
     # via -r requirements-base.in
+envparse==0.2.0
+    # via codaio
 fastapi==0.65.1
     # via -r requirements-base.in
 google-api-core==1.26.1
@@ -114,6 +124,8 @@ idna==2.10
     #   requests
     #   rfc3986
     #   yarl
+inflection==0.3.1
+    # via codaio
 jinja2==3.0.0
     # via -r requirements-base.in
 jira==2.0.0
@@ -199,6 +211,8 @@ pydantic==1.8.2
     # via fastapi
 pyjwt==2.0.1
     # via oauthlib
+pyopenssl==20.0.1
+    # via -r requirements-base.in
 pyparsing==2.4.7
     # via
     #   -r requirements-base.in
@@ -209,6 +223,7 @@ python-dateutil==2.8.1
     #   -r requirements-base.in
     #   alembic
     #   arrow
+    #   codaio
     #   emails
     #   pandas
 python-editor==1.0.4
@@ -231,6 +246,7 @@ requests-toolbelt==0.9.1
 requests==2.25.1
     # via
     #   -r requirements-base.in
+    #   codaio
     #   emails
     #   google-api-core
     #   jira
@@ -270,6 +286,7 @@ six==1.15.0
     #   oauth2client
     #   patsy
     #   protobuf
+    #   pyopenssl
     #   python-dateutil
     #   python-jose
     #   python-multipart
