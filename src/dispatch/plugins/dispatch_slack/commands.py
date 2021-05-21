@@ -52,9 +52,9 @@ from .modals.incident.handlers import (
     create_update_incident_modal,
     create_update_notifications_group_modal,
     create_update_participant_modal,
-    create_run_workflow_modal,
-    create_rating_feedback_modal,
 )
+
+from .modals.feedback.handlers import create_rating_feedback_modal
 
 from .modals.workflow.handlers import create_run_workflow_modal
 
@@ -353,8 +353,7 @@ def list_workflows(
     """Returns the list of incident workflows to the user as an ephemeral message."""
     incident = incident_service.get(db_session=db_session, incident_id=incident_id)
 
-    blocks = []
-    blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": "*Incident Workflows*"}})
+    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": "*Incident Workflows*"}}]
     for w in incident.workflow_instances:
         artifact_links = ""
         for a in w.artifacts:
@@ -398,10 +397,7 @@ def list_participants(
     slack_client=None,
 ):
     """Returns the list of incident participants to the user as an ephemeral message."""
-    blocks = []
-    blocks.append(
-        {"type": "section", "text": {"type": "mrkdwn", "text": "*Incident Participants*"}}
-    )
+    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": "*Incident Participants*"}}]
 
     participants = participant_service.get_all_by_incident_id(
         db_session=db_session, incident_id=incident_id
