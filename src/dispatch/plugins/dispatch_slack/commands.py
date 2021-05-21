@@ -46,7 +46,7 @@ from .config import (
 
 from .decorators import slack_background_task
 
-from .modals import (
+from .modals.incident.handlers import (
     create_add_timeline_event_modal,
     create_report_incident_modal,
     create_update_incident_modal,
@@ -55,6 +55,8 @@ from .modals import (
     create_run_workflow_modal,
     create_rating_feedback_modal,
 )
+
+from .modals.workflow.handlers import create_run_workflow_modal
 
 from .dialogs import (
     create_assign_role_dialog,
@@ -119,9 +121,9 @@ def check_command_restrictions(
     )
 
     # if any required role is active, allow command
-    for current_role in participant.current_roles:
+    for active_role in participant.active_roles:
         for allowed_role in command_permissions[command]:
-            if current_role.role == allowed_role:
+            if active_role.role == allowed_role:
                 return True
 
 
@@ -412,7 +414,7 @@ def list_participants(
     )
 
     for participant in participants:
-        if participant.is_active:
+        if participant.active_roles:
             participant_email = participant.individual.email
             participant_info = contact_plugin.instance.get(participant_email)
             participant_name = participant_info["fullname"]
@@ -487,7 +489,6 @@ def list_incidents(
 ):
     """Returns the list of current active and stable incidents,
     and closed incidents in the last 24 hours."""
-
     incidents = []
 
     # scopes reply to the current incident's project
