@@ -233,8 +233,9 @@ def delete_participant_groups(incident: Incident, db_session: SessionLocal):
     plugin = plugin_service.get_active_instance(
         db_session=db_session, project_id=incident.project.id, plugin_type="participant-group"
     )
-    plugin.instance.delete(email=incident.tactical_group.email)
-    plugin.instance.delete(email=incident.notifications_group.email)
+    if plugin:
+        plugin.instance.delete(email=incident.tactical_group.email)
+        plugin.instance.delete(email=incident.notifications_group.email)
 
 
 def create_conference(incident: Incident, participants: List[str], db_session: SessionLocal):
@@ -875,6 +876,9 @@ def incident_closed_status_flow(incident: Incident, db_session=None):
             )
             if storage_plugin:
                 storage_plugin.instance.open(incident.storage.resource_id)
+
+    # Close groups
+    delete_participant_groups(incident=incident, db_session=db_session)
 
     # we send a direct message to the incident commander asking to review
     # the incident's information and to tag the incident if appropiate
