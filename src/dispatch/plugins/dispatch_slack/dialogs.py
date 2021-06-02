@@ -145,6 +145,29 @@ def create_assign_task_dialog(
 
 
 @slack_background_task
+def create_learned_lessons_dialog(
+    user_id: str,
+    user_email: str,
+    channel_id: str,
+    incident_id: int,
+    command: dict = None,
+    db_session=None,
+    slack_client=None,
+):
+    """Creates a dialog for add tasks."""
+    dialog = {
+        "callback_id": command["command"],
+        "title": "Add learned lessons",
+        "submit_label": "Add",
+        "elements": [
+            {"type": "textarea", "label": "Learned lesson", "name": "lesson", "value": ""}
+        ]
+    }
+
+    dispatch_slack_service.open_dialog_with_user(slack_client, command["trigger_id"], dialog)
+
+
+@slack_background_task
 def create_tactical_report_dialog(
     user_id: str,
     user_email: str,

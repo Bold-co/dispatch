@@ -1,16 +1,15 @@
+from dispatch.feedback import service as feedback_service
+from dispatch.feedback.enums import FeedbackRating
+from dispatch.feedback.models import FeedbackCreate
 from dispatch.incident import service as incident_service
 from dispatch.participant import service as participant_service
-from dispatch.feedback import service as feedback_service
-from dispatch.feedback.models import FeedbackCreate
-
 from dispatch.plugins.dispatch_slack.decorators import slack_background_task
+from dispatch.plugins.dispatch_slack.modals.common import parse_submitted_form
 from dispatch.plugins.dispatch_slack.service import (
     send_message,
     send_ephemeral_message,
     open_modal_with_user,
 )
-from dispatch.plugins.dispatch_slack.modals.common import parse_submitted_form
-
 from .views import rating_feedback_view, RatingFeedbackBlockId
 
 
@@ -63,7 +62,11 @@ def rating_feedback_from_submitted_form(
     parsed_form_data = parse_submitted_form(submitted_form)
 
     feedback = parsed_form_data.get(RatingFeedbackBlockId.feedback)
-    rating = parsed_form_data.get(RatingFeedbackBlockId.rating, {}).get("value")
+
+    if parsed_form_data.get(RatingFeedbackBlockId.rating):
+        rating = parsed_form_data.get(RatingFeedbackBlockId.rating, {}).get("value")
+    else:
+        rating = FeedbackRating.neither_satisfied_nor_dissatisfied.value
 
     feedback_in = FeedbackCreate(rating=rating, feedback=feedback, project=incident.project)
     feedback = feedback_service.create(db_session=db_session, feedback_in=feedback_in)

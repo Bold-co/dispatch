@@ -65,6 +65,6 @@ SLACK_COMMAND_LIST_WORKFLOWS_SLUG = config(
 SLACK_COMMAND_ASSIGN_TASK_SLUG = config(
     "SLUG_SLACK_COMMAND_ASSIGN_TASK_SLUG", default="/dispatch-assign-task"
 )
-SLACK_COMMAND_ADD_FEEDBACK_SLUG = config(
-    "SLUG_SLACK_COMMAND_ADD_FEEDBACK_SLUG", default="/dispatch-add-feedback"
+SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG = config(
+    "SLUG_SLACK_COMMAND_ADD_FEEDBACK_SLUG", default="/dispatch-add-learned-lesson"
 )

@@ -19,7 +19,6 @@ from dispatch.plugins.dispatch_slack import service as dispatch_slack_service
 from dispatch.project import service as project_service
 from dispatch.task import service as task_service
 from dispatch.task.models import TaskStatus, Task
-
 from .config import (
     SLACK_APP_USER_SLUG,
     SLACK_COMMAND_ADD_TIMELINE_EVENT_SLUG,
@@ -38,27 +37,23 @@ from .config import (
     SLACK_COMMAND_UPDATE_PARTICIPANT_SLUG,
     SLACK_COMMAND_RUN_WORKFLOW_SLUG,
     SLACK_COMMAND_LIST_WORKFLOWS_SLUG,
-    SLACK_COMMAND_ADD_FEEDBACK_SLUG,
+    SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG,
     SLACK_COMMAND_ASSIGN_TASK_SLUG,
 )
-
 from .decorators import slack_background_task
-
 from .dialogs import (
     create_assign_role_dialog,
     create_engage_oncall_dialog,
     create_executive_report_dialog,
     create_tactical_report_dialog,
-    create_assign_task_dialog,
+    create_assign_task_dialog, create_learned_lessons_dialog,
 )
-
 from .messaging import (
     INCIDENT_CONVERSATION_COMMAND_MESSAGE,
     create_command_run_in_conversation_where_bot_not_present_message,
     create_command_run_in_nonincident_conversation_message,
     create_command_run_by_non_privileged_user_message,
 )
-
 from .modals.incident.handlers import (
     create_add_timeline_event_modal,
     create_report_incident_modal,
@@ -66,10 +61,7 @@ from .modals.incident.handlers import (
     create_update_notifications_group_modal,
     create_update_participant_modal,
 )
-
 from .modals.workflow.handlers import create_run_workflow_modal
-
-from .modals.feedback.handlers import create_rating_feedback_modal
 
 log = logging.getLogger(__name__)
 
@@ -144,7 +136,7 @@ def command_functions(command: str):
         SLACK_COMMAND_RUN_WORKFLOW_SLUG: [create_run_workflow_modal],
         SLACK_COMMAND_LIST_WORKFLOWS_SLUG: [list_workflows],
         SLACK_COMMAND_ASSIGN_TASK_SLUG: [create_assign_task_dialog],
-        SLACK_COMMAND_ADD_FEEDBACK_SLUG: [create_rating_feedback_modal],
+        SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG: [create_learned_lessons_dialog],
     }
 
     return command_mappings.get(command, [])

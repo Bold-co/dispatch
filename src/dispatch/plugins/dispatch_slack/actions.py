@@ -1,11 +1,13 @@
 import base64
 import json
+
 from fastapi import BackgroundTasks
 
 from dispatch.conversation import service as conversation_service
 from dispatch.conversation.enums import ConversationButtonActions
 from dispatch.conversation.messaging import send_feedack_to_user
 from dispatch.database.core import SessionLocal
+from dispatch.feedback import service as feedback_service
 from dispatch.incident import flows as incident_flows
 from dispatch.incident import service as incident_service
 from dispatch.incident.enums import IncidentStatus
@@ -15,24 +17,26 @@ from dispatch.report import flows as report_flows
 from dispatch.report.models import ExecutiveReportCreate, TacticalReportCreate
 from dispatch.task import service as task_service
 from dispatch.task.models import TaskStatus, TaskCreate
-
 from .config import (
     SLACK_COMMAND_ASSIGN_ROLE_SLUG,
     SLACK_COMMAND_ENGAGE_ONCALL_SLUG,
     SLACK_COMMAND_REPORT_EXECUTIVE_SLUG,
     SLACK_COMMAND_REPORT_TACTICAL_SLUG,
-    SLACK_COMMAND_ASSIGN_TASK_SLUG,
+    SLACK_COMMAND_ASSIGN_TASK_SLUG, SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG,
 )
-
-from .modals.feedback.views import RatingFeedbackCallbackId
+from .decorators import slack_background_task
 from .modals.feedback.handlers import (
     rating_feedback_from_submitted_form,
     create_rating_feedback_modal,
 )
-
-from .modals.workflow.views import RunWorkflowCallbackId
-from .modals.workflow.handlers import run_workflow_submitted_form, update_workflow_modal
-
+from .modals.feedback.views import RatingFeedbackCallbackId
+from .modals.incident.enums import (
+    AddTimelineEventCallbackId,
+    UpdateIncidentCallbackId,
+    ReportIncidentCallbackId,
+    UpdateParticipantCallbackId,
+    UpdateNotificationsGroupCallbackId,
+)
 from .modals.incident.handlers import (
     report_incident_from_submitted_form,
     add_timeline_event_from_submitted_form,
@@ -42,17 +46,11 @@ from .modals.incident.handlers import (
     update_report_incident_modal,
     update_update_participant_modal,
 )
-
-from .modals.incident.enums import (
-    AddTimelineEventCallbackId,
-    UpdateIncidentCallbackId,
-    ReportIncidentCallbackId,
-    UpdateParticipantCallbackId,
-    UpdateNotificationsGroupCallbackId,
-)
-
-from .service import get_user_email
-from .decorators import slack_background_task
+from .modals.workflow.handlers import run_workflow_submitted_form, update_workflow_modal
+from .modals.workflow.views import RunWorkflowCallbackId
+from .service import get_user_email, send_message
+from ...feedback.enums import FeedbackRating
+from ...feedback.models import FeedbackCreate
 from ...messaging.strings import INCIDENT_TASK_NEW_NOTIFICATION
 from ...task.flows import send_task_notification
 
@@ -427,6 +425,38 @@ def handle_assign_task_action(
     )
 
 
+@slack_background_task
+def handle_add_learned_lesson(
+    user_id: str,
+    user_email: str,
+    channel_id: str,
+    incident_id: int,
+    action: dict,
+    db_session=None,
+    slack_client=None,
+):
+    """Massages slack dialog data into something that Dispatch can use."""
+    feedback = action["submission"]["lesson"]
+
+    incident = incident_service.get(db_session=db_session, incident_id=incident_id)
+    rating = FeedbackRating.neither_satisfied_nor_dissatisfied.value
+
+    feedback_in = FeedbackCreate(rating=rating, feedback=feedback, project=incident.project)
+    feedback = feedback_service.create(db_session=db_session, feedback_in=feedback_in)
+
+    incident.feedback.append(feedback)
+
+    db_session.add(incident)
+    db_session.commit()
+
+    send_message(
+        client=slack_client,
+        conversation_id=user_id,
+        text="Thank you for your feedback!",
+    )
+
+
+
 def dialog_action_functions(action: str):
     """Interprets the action and routes it to the appropriate function."""
     action_mappings = {
@@ -434,7 +464,8 @@ def dialog_action_functions(action: str):
         SLACK_COMMAND_ENGAGE_ONCALL_SLUG: [handle_engage_oncall_action],
         SLACK_COMMAND_REPORT_EXECUTIVE_SLUG: [handle_executive_report_create],
         SLACK_COMMAND_REPORT_TACTICAL_SLUG: [handle_tactical_report_create],
-        SLACK_COMMAND_ASSIGN_TASK_SLUG: [handle_assign_task_action]
+        SLACK_COMMAND_ASSIGN_TASK_SLUG: [handle_assign_task_action],
+        SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG: [handle_add_learned_lesson]
     }
 
     # this allows for unique action blocks e.g. invite-user or invite-user-1, etc
