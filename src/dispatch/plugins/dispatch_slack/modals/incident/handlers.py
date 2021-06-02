@@ -1,14 +1,15 @@
 import pytz
 from datetime import datetime
 from dispatch.database.core import SessionLocal
+from dispatch.event.flows import send_timeline_event_notification
 from dispatch.incident import service as incident_service
 from dispatch.incident import flows as incident_flows
 from dispatch.incident.models import IncidentUpdate, IncidentRead, IncidentCreate
+from dispatch.messaging.strings import INCIDENT_TIMELINE_NEW_NOTIFICATION
 from dispatch.participant import service as participant_service
 from dispatch.participant.models import ParticipantUpdate
 from dispatch.plugin import service as plugin_service
 from dispatch.event import service as event_service
-
 
 from dispatch.plugins.dispatch_slack.decorators import slack_background_task
 from dispatch.plugins.dispatch_slack.messaging import create_incident_reported_confirmation_message
@@ -16,7 +17,7 @@ from dispatch.plugins.dispatch_slack.service import (
     send_ephemeral_message,
     open_modal_with_user,
     update_modal_with_user,
-    get_user_profile_by_email,
+    get_user_profile_by_email, send_message,
 )
 from dispatch.plugins.dispatch_slack.modals.common import parse_submitted_form
 
@@ -312,8 +313,8 @@ def update_notifications_group_from_submitted_form(
     )
     updated_members = (
         parsed_form_data.get(UpdateNotificationsGroupBlockId.update_members)
-        .replace(" ", "")
-        .split(",")
+            .replace(" ", "")
+            .split(",")
     )
 
     members_added = list(set(updated_members) - set(current_members))
@@ -370,6 +371,7 @@ def add_timeline_event_from_submitted_form(
 
     event_date = parsed_form_data.get(AddTimelineEventBlockId.date)
     event_hour = parsed_form_data.get(AddTimelineEventBlockId.hour)["value"]
+    event_am_pm_selection = parsed_form_data.get(AddTimelineEventBlockId.am_pm)["value"]
     event_minute = parsed_form_data.get(AddTimelineEventBlockId.minute)["value"]
     event_timezone_selection = parsed_form_data.get(AddTimelineEventBlockId.timezone)["value"]
     event_description = parsed_form_data.get(AddTimelineEventBlockId.description)
@@ -384,6 +386,9 @@ def add_timeline_event_from_submitted_form(
         if participant_profile.get("tz"):
             event_timezone = participant_profile.get("tz")
 
+    if event_am_pm_selection == "PM":
+        event_hour = str(int(event_hour) + 12)
+
     event_dt = datetime.fromisoformat(f"{event_date}T{event_hour}:{event_minute}")
     event_dt_utc = pytz.timezone(event_timezone).localize(event_dt).astimezone(pytz.utc)
 
@@ -396,9 +401,18 @@ def add_timeline_event_from_submitted_form(
         individual_id=participant.individual.id,
     )
 
-    send_ephemeral_message(
-        client=slack_client,
-        conversation_id=channel_id,
-        user_id=user_id,
-        text="Event sucessfully added to timeline.",
+    incident = incident_service.get(db_session=db_session, incident_id=incident_id)
+
+    items = [{
+        "event_date": event_dt,
+        "creator": participant.individual.name,
+        "timeline_description": event_description
+    }]
+
+    send_timeline_event_notification(
+        channel_id,
+        INCIDENT_TIMELINE_NEW_NOTIFICATION,
+        db_session,
+        project_id=incident.project_id,
+        items=items
     )

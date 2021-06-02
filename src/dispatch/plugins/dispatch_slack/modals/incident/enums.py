@@ -48,6 +48,7 @@ class AddTimelineEventBlockId(str, Enum):
     date = "date_field"
     hour = "hour_field"
     minute = "minute_field"
+    am_pm = "am_pm"
     timezone = "timezone_field"
     description = "description_field"
 

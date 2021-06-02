@@ -318,7 +318,8 @@ def unarchive_conversation(client: Any, conversation_id: str):
 
 def add_users_to_conversation(client: Any, conversation_id: str, user_ids: List[str]):
     """Add users to conversation."""
-    # NOTE this will trigger a member_joined_channel event, which we will capture and run the incident.incident_add_or_reactivate_participant_flow() as a result
+    # NOTE this will trigger a member_joined_channel event, which we will capture and run
+    # the incident.incident_add_or_reactivate_participant_flow() as a result
     for c in chunks(user_ids, 30):  # NOTE api only allows 30 at a time.
         try:
             make_call(client, "conversations.invite", users=c, channel=conversation_id)

@@ -200,7 +200,7 @@ def update_notifications_group(incident: Incident, db_session: SessionLocal):
             "type": "plain_text_input",
             "action_id": UpdateNotificationsGroupBlockId.update_members,
             "multiline": True,
-            "initial_value": (", ").join(members),
+            "initial_value": ", ".join(members),
         },
     }
     modal_template["blocks"].append(members_block)
@@ -248,8 +248,9 @@ def add_timeline_event(incident: Incident):
     }
     modal_template["blocks"].append(date_picker_block)
 
-    hour_picker_options = []
-    for h in range(0, 24):
+    hour_picker_options = [option_from_template(text=f"12:00", value="00")]
+
+    for h in range(1, 12):
         h = str(h).zfill(2)
         hour_picker_options.append(option_from_template(text=f"{h}:00", value=h))
 
@@ -267,8 +268,8 @@ def add_timeline_event(incident: Incident):
     modal_template["blocks"].append(hour_picker_block)
 
     minute_picker_options = []
-    for m in range(0, 60):
-        minute_picker_options.append(option_from_template(text=m, value=str(m).zfill(2)))
+    for m in range(0, 60, 5):
+        minute_picker_options.append(option_from_template(text=str(m), value=str(m).zfill(2)))
 
     minute_picker_block = {
         "type": "input",
@@ -282,6 +283,31 @@ def add_timeline_event(incident: Incident):
         "optional": False,
     }
     modal_template["blocks"].append(minute_picker_block)
+
+    am_pm_block = {
+        "type": "input",
+        "block_id": AddTimelineEventBlockId.am_pm,
+        "label": {"type": "plain_text", "text": "AM/PM"},
+        "element": {
+            "type": "radio_buttons",
+            "initial_option": {
+                    "text": {"type": "plain_text", "text": "AM"},
+                    "value": "AM",
+                },
+            "options": [
+                {
+                    "text": {"type": "plain_text", "text": "AM"},
+                    "value": "AM",
+                },
+                {
+                    "text": {"type": "plain_text", "text": "PM"},
+                    "value": "PM",
+                }
+            ],
+        },
+        "optional": False,
+    }
+    modal_template["blocks"].append(am_pm_block)
 
     timezone_block = {
         "type": "input",

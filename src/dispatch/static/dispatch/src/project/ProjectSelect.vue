@@ -24,6 +24,7 @@
 <script>
 import { cloneDeep } from "lodash"
 import ProjectApi from "@/project/api"
+import SearchUtils from "@/search/utils"
 
 export default {
   name: "ProjectSelect",

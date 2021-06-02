@@ -73,7 +73,7 @@ class AzureTicketPlugin(TicketPlugin):
         db_session=None,
     ):
         """Creates an Azure issue."""
-        url = f'{AZURE_DEVOPS_URL}_apis/wit/workitems/$issue?api-version=5.1'
+        url = f'{AZURE_DEVOPS_URL}_apis/wit/workitems/$User Story?api-version=5.1'
         data = [
             {
                 "op": "add",

@@ -340,7 +340,12 @@ def create_conversation(incident: Incident, db_session: SessionLocal):
     plugin = plugin_service.get_active_instance(
         db_session=db_session, project_id=incident.project.id, plugin_type="conversation"
     )
-    conversation = plugin.instance.create(incident.name)
+    is_private = False
+    visibility = incident.incident_type.visibility
+    if visibility != Visibility.open:
+        is_private = True
+
+    conversation = plugin.instance.create(incident.name, is_private=is_private)
     conversation.update({"resource_type": plugin.plugin.slug, "resource_id": conversation["name"]})
 
     event_service.log(
@@ -681,9 +686,7 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                 log.exception(e)
 
     # we defer this setup until after resources have been created
-    for user_email in set(
-        [incident.commander.individual.email, incident.reporter.individual.email]
-    ):
+    for user_email in {incident.commander.individual.email, incident.reporter.individual.email}:
         # we add the participant to the tactical group
         add_participant_to_tactical_group(user_email, incident, db_session)
 

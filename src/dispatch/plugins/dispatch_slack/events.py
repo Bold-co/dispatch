@@ -24,6 +24,7 @@ from .service import get_user_email
 slack_client = dispatch_slack_service.create_slack_client()
 log = logging.getLogger(__name__)
 
+
 class EventBodyItem(BaseModel):
     """Body item of the Slack event."""
 
@@ -270,7 +271,8 @@ def ban_threads_warning(
         # over the Events API. Until it is fixed, examine message events' thread_ts value.
         # When present, it's a reply. To be doubly sure, compare a thread_ts to the top-level ts
         # value, when they differ the latter is a reply to the former.
-        message = "Please refrain from using threads in incident related channels. Threads make it harder for incident participants to maintain context."
+        message = "Please refrain from using threads in incident related channels. " \
+                  "Threads make it harder for incident participants to maintain context."
         dispatch_slack_service.send_ephemeral_message(
             slack_client,
             event.event.channel,

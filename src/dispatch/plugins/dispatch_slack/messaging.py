@@ -5,6 +5,7 @@
     :license: Apache, see LICENSE for more details.
 """
 import logging
+from datetime import datetime, date
 from typing import List, Optional
 from jinja2 import Template
 
@@ -15,7 +16,7 @@ from dispatch.messaging.strings import (
     INCIDENT_TASK_LIST_DESCRIPTION,
     INCIDENT_TASK_REMINDER_DESCRIPTION,
     MessageType,
-    render_message_template,
+    render_message_template, INCIDENT_TIMELINE_NEW_DESCRIPTION,
 )
 
 from .config import (
@@ -152,7 +153,8 @@ def create_command_run_in_nonincident_conversation_message(command: str):
 def create_command_run_in_conversation_where_bot_not_present_message(
     command: str, conversations: List
 ):
-    """Creates a message for when a non-incident specific command is run in a conversation where the Dispatch bot is not present."""
+    """Creates a message for when a non-incident specific command is run in a
+    conversation where the Dispatch bot is not present."""
     conversations = (", ").join([f"#{conversation}" for conversation in conversations])
     return {
         "response_type": "ephemeral",
@@ -178,7 +180,8 @@ def create_incident_reported_confirmation_message(
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "This is a confirmation that you have reported a security incident with the following information. You'll get invited to a Slack conversation soon.",
+                "text": "This is a confirmation that you have reported a security incident "
+                        "with the following information. You'll get invited to a Slack conversation soon.",
             },
         },
         {"type": "section", "text": {"type": "mrkdwn", "text": f"*Incident Title*: {title}"}},
@@ -238,6 +241,10 @@ def get_template(message_type: MessageType):
             default_notification,
             None,
         ),
+        MessageType.incident_timeline_new: (
+            default_notification,
+            None,
+        ),
     }
 
     template_func, description = template_map.get(message_type, (None, None))
@@ -253,7 +260,10 @@ def format_default_text(item: dict):
     if item.get("title_link"):
         return f"*<{item['title_link']}|{item['title']}>*\n{item['text']}"
     if item.get("datetime"):
-        return f"*{item['title']}*\n <!date^{int(item['datetime'].timestamp())}^ {{date}} | {item['datetime']}"
+        if isinstance(item['datetime'], (date, datetime)):
+            return f"*{item['title']}*\n <!date^{int(item['datetime'].timestamp())}^ {{date}} | {item['datetime']}"
+        else:
+            return f"*{item['title']}*\n{item['datetime']}"
     if item.get("title"):
         return f"*{item['title']}*\n{item['text']}"
     return item["text"]
@@ -261,8 +271,7 @@ def format_default_text(item: dict):
 
 def default_notification(items: list):
     """Creates blocks for a default notification."""
-    blocks = []
-    blocks.append({"type": "divider"})
+    blocks = [{"type": "divider"}]
     for item in items:
         if isinstance(item, list):  # handle case where we are passing multiple grouped items
             blocks += default_notification(item)

@@ -34,12 +34,15 @@ class MessageType(str, Enum):
     incident_tactical_report = "incident-tactical-report"
     incident_task_list = "incident-task-list"
     incident_task_reminder = "incident-task-reminder"
+    incident_timeline_new = "incident-timeline-new"
 
 
 INCIDENT_STATUS_DESCRIPTIONS = {
     IncidentStatus.active.value: "This incident is under active investigation.",
-    IncidentStatus.stable.value: "This incident is stable, the bulk of the investigation has been completed or most of the risk has been mitigated.",
-    IncidentStatus.closed.value: "This no longer requires additional involvement, long term incident action items have been assigned to their respective owners.",
+    IncidentStatus.stable.value: "This incident is stable, the bulk of the investigation has been completed "
+                                 "or most of the risk has been mitigated.",
+    IncidentStatus.closed.value: "This no longer requires additional involvement, long term incident action "
+                                 "items have been assigned to their respective owners.",
 }
 
 INCIDENT_TASK_REMINDER_DESCRIPTION = """
@@ -69,7 +72,8 @@ Incidents Daily Report""".replace(
 ).strip()
 
 INCIDENT_DAILY_REPORT_DESCRIPTION = """
-This is a daily report of incidents that are currently active and incidents that have been marked as stable or closed in the last 24 hours.""".replace(
+This is a daily report of incidents that are currently active and incidents that have been marked as
+stable or closed in the last 24 hours.""".replace(
     "\n", " "
 ).strip()
 
@@ -115,7 +119,8 @@ and participants in the incident conversation.""".replace(
 ).strip()
 
 INCIDENT_CONFERENCE_DESCRIPTION = """
-Video conference and phone bridge to be used throughout the incident.  Password: {{conference_challenge if conference_challenge else 'N/A'}}
+Video conference and phone bridge to be used throughout the incident.
+Password: {{conference_challenge if conference_challenge else 'N/A'}}
 """.replace(
     "\n", ""
 ).strip()
@@ -220,8 +225,10 @@ The following conditions, actions, and needs summarize the current status of the
 ).strip()
 
 INCIDENT_NEW_ROLE_DESCRIPTION = """
-{{assigner_fullname if assigner_fullname else assigner_email}} has assigned the role of {{assignee_role}} to {{assignee_fullname if assignee_fullname else assignee_email}}.
-Please, contact {{assignee_fullname if assignee_fullname else assignee_email}} about any questions or concerns.""".replace(
+{{assigner_fullname if assigner_fullname else assigner_email}} has assigned the role of {{assignee_role}}
+ to {{assignee_fullname if assignee_fullname else assignee_email}}.
+Please, contact {{assignee_fullname if assignee_fullname else assignee_email}}
+about any questions or concerns.""".replace(
     "\n", " "
 ).strip()
 
@@ -230,16 +237,28 @@ You can use `{{command}}` in the conversation to assist you in writing one.""".r
     "\n", " "
 ).strip()
 
-INCIDENT_STATUS_REMINDER_DESCRIPTION = """You have not updated the status for this incident recently. If the incident has been resolved,
+INCIDENT_STATUS_REMINDER_DESCRIPTION = """You have not updated the status for this incident recently.
+If the incident has been resolved,
 you can use `{{command}}` in the conversation to assist you in closing your incident.""".replace(
     "\n", " "
 ).strip()
 
 INCIDENT_TASK_NEW_DESCRIPTION = """
-The following incident task has been created in the incident document.\n\n*Description:* {{task_description}}\n\n*Assignees:* {{task_assignees|join(',')}}"""
+The following incident task has been created in the incident document.\n\n
+*Description:* {{task_description}}\n\n
+*Assignees:* {{task_assignees|join(',')}}"""
 
 INCIDENT_TASK_RESOLVED_DESCRIPTION = """
-The following incident task has been resolved in the incident document.\n\n*Description:* {{task_description}}\n\n*Assignees:* {{task_assignees|join(',')}}"""
+The following incident task has been resolved in the incident document.\n\n
+*Description:* {{task_description}}\n\n
+*Assignees:* {{task_assignees|join(',')}}"""
+
+INCIDENT_TIMELINE_NEW_DESCRIPTION = """
+The following incident timeline event has been created in the incident document.\n\n
+*Description:* {{timeline_description}}
+*Creator:* {{creator}}
+*Event date:* {{event_date}}
+"""
 
 INCIDENT_WORKFLOW_CREATED_DESCRIPTION = """
 A new workflow instance has been created.
@@ -276,16 +295,22 @@ Also, please consider taking the following actions:
 """
 
 INCIDENT_CLOSED_RATING_FEEDBACK_DESCRIPTION = """
-Thanks for participating in the {{name}} ("{{title}}") incident. We would appreciate if you could rate your experience and provide feedback."""
+Thanks for participating in the {{name}} ("{{title}}") incident. We would appreciate
+if you could rate your experience and provide feedback."""
 
 INCIDENT_MANAGEMENT_HELP_TIPS_MESSAGE_DESCRIPTION = """
-Hey, I see you're the Incident Commander for {{name}} ("{{title}}"). Here are a few things to consider when managing the incident:
+Hey, I see you're the Incident Commander for {{name}} ("{{title}}").
+Here are a few things to consider when managing the incident:
 \n • Keep the incident and its status up to date using the Slack `{{update_command}}` command.
-\n • Invite incident participants and team oncalls by mentioning them in the incident channel or using the Slack `{{engage_oncall_command}}` command.
-\n • Keep incident participants and stakeholders informed using the `{{tactical_report_command}}` and `{{executive_report_command}}` commands.
-\n • Get links to all incident resources including the Slack commands reference sheet and Security Incident Response FAQ by running the `{{list_resources_command}}` command.
+\n • Invite incident participants and team oncalls by mentioning them in the incident channel or
+using the Slack `{{engage_oncall_command}}` command.
+\n • Keep incident participants and stakeholders informed using the `{{tactical_report_command}}`
+and `{{executive_report_command}}` commands.
+\n • Get links to all incident resources including the Slack commands reference sheet and Security
+Incident Response FAQ by running the `{{list_resources_command}}` command.
 \n
-To find a Slack command, simply type `/` in the message field or click the lightning bolt icon to the left of the message field.
+To find a Slack command, simply type `/` in the message field or click the lightning bolt icon
+to the left of the message field.
 """
 
 INCIDENT_TYPE_CHANGE_DESCRIPTION = """
@@ -530,7 +555,6 @@ INCIDENT_NEW_ROLE_NOTIFICATION = [
 INCIDENT_TASK_NEW_NOTIFICATION = [
     {
         "title": "New Incident Task",
-        "title_link": "{{task_weblink}}",
         "text": INCIDENT_TASK_NEW_DESCRIPTION,
     }
 ]
@@ -540,6 +564,13 @@ INCIDENT_TASK_RESOLVED_NOTIFICATION = [
         "title": "Resolved Incident Task",
         "title_link": "{{task_weblink}}",
         "text": INCIDENT_TASK_RESOLVED_DESCRIPTION,
+    }
+]
+
+INCIDENT_TIMELINE_NEW_NOTIFICATION = [
+    {
+        "title": "New Timeline Event",
+        "text": INCIDENT_TIMELINE_NEW_DESCRIPTION,
     }
 ]
 

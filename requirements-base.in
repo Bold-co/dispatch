@@ -7,6 +7,7 @@ bcrypt
 cachetools==3.1.1  # NOTE pinning for google-auth
 chardet==3.0.4
 click
+codaio~=0.6.5
 email-validator
 emails
 fastapi
@@ -15,7 +16,6 @@ google-auth-oauthlib
 h11==0.9.0 # NOTE pinning due to uvicorn
 httpx
 idna==2.10
-jest-worker
 jinja2
 jira
 joblib
@@ -24,6 +24,7 @@ oauth2client
 pandas
 pdpyras
 psycopg2-binary
+pyopenssl
 pyparsing
 python-dateutil
 python-jose
@@ -42,3 +43,5 @@ statsmodels
 tabulate
 tenacity
 uvicorn
+
+setuptools~=57.0.0

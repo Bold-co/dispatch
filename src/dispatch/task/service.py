@@ -9,7 +9,9 @@ from dispatch.event import service as event_service
 from dispatch.incident import flows as incident_flows
 from dispatch.incident.flows import incident_service
 from dispatch.ticket import service as ticket_service
+from .flows import send_task_notification
 from .models import Task, TaskStatus, TaskUpdate, TaskCreate
+from ..messaging.strings import INCIDENT_TASK_NEW_NOTIFICATION
 
 
 def get(*, db_session, task_id: int) -> Optional[Task]:
@@ -131,6 +133,7 @@ def create(*, db_session, task_in: TaskCreate) -> Task:
 
     db_session.add(task)
     db_session.commit()
+
     return task
 
 

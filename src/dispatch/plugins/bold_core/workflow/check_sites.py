@@ -5,7 +5,6 @@ import logging
 import select
 import socket
 import traceback
-from collections import namedtuple
 from typing import List
 
 import OpenSSL

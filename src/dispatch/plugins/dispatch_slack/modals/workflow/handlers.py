@@ -189,4 +189,5 @@ def run_workflow_submitted_form(
         instance_creator_name=instance.creator.individual.name,
         workflow_name=instance.workflow.name,
         workflow_description=instance.workflow.description,
+        project_id=incident.project_id
     )
