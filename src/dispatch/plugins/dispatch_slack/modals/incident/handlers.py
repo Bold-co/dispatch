@@ -1,8 +1,10 @@
-import pytz
 from datetime import datetime
+
+import pytz
 
 from dispatch.database.core import SessionLocal
 from dispatch.event import service as event_service
+from dispatch.event.flows import send_timeline_event_notification
 from dispatch.incident import flows as incident_flows
 from dispatch.incident import service as incident_service
 from dispatch.incident.enums import IncidentStatus
@@ -11,18 +13,15 @@ from dispatch.messaging.strings import INCIDENT_TIMELINE_NEW_NOTIFICATION
 from dispatch.participant import service as participant_service
 from dispatch.participant.models import ParticipantUpdate
 from dispatch.plugin import service as plugin_service
-
 from dispatch.plugins.dispatch_slack.decorators import slack_background_task
 from dispatch.plugins.dispatch_slack.messaging import create_incident_reported_confirmation_message
+from dispatch.plugins.dispatch_slack.modals.common import parse_submitted_form
 from dispatch.plugins.dispatch_slack.service import (
     send_ephemeral_message,
     open_modal_with_user,
     update_modal_with_user,
-    get_user_profile_by_email,
-    send_message
+    get_user_profile_by_email
 )
-from dispatch.plugins.dispatch_slack.modals.common import parse_submitted_form
-
 from .enums import (
     IncidentBlockId,
     UpdateParticipantBlockId,

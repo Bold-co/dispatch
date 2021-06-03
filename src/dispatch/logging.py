@@ -9,3 +9,9 @@ def configure_logging():
         logging.basicConfig(level=LOG_LEVEL, format=LOGFORMAT)
     else:
         logging.basicConfig(level=LOG_LEVEL)
+
+    uvicorn_logger = logging.getLogger('uvicorn.access')
+    uvicorn_logger.setLevel(logging.CRITICAL)
+
+
+
