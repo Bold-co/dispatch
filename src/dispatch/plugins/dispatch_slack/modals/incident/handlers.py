@@ -380,11 +380,9 @@ def add_timeline_event_from_submitted_form(
         db_session=db_session, incident_id=incident_id, email=user_email
     )
 
-    event_timezone = event_timezone_selection
-    if event_timezone_selection == "profile":
-        participant_profile = get_user_profile_by_email(slack_client, user_email)
-        if participant_profile.get("tz"):
-            event_timezone = participant_profile.get("tz")
+    participant_profile = get_user_profile_by_email(slack_client, user_email)
+    if participant_profile.get("tz"):
+        event_timezone = participant_profile.get("tz")
 
     if event_am_pm_selection == "PM":
         event_hour = str(int(event_hour) + 12)

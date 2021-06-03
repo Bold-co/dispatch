@@ -7,7 +7,6 @@ from dispatch.participant.models import Participant
 from dispatch.project import service as project_service
 from dispatch.plugin import service as plugin_service
 
-
 from .enums import (
     ReportIncidentCallbackId,
     UpdateIncidentCallbackId,
@@ -91,7 +90,7 @@ def report_incident(
                     {
                         "type": "mrkdwn",
                         "text": "If you suspect an incident and require help, "
-                        "please fill out the following to the best of your abilities.",
+                                "please fill out the following to the best of your abilities.",
                     }
                 ],
             },
@@ -220,17 +219,7 @@ def add_timeline_event(incident: Incident):
     modal_template = {
         "type": "modal",
         "title": {"type": "plain_text", "text": "Add Timeline Event"},
-        "blocks": [
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "plain_text",
-                        "text": "Use this form to add an event to the incident timeline.",
-                    }
-                ],
-            },
-        ],
+        "blocks": [],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Submit"},
         "callback_id": AddTimelineEventCallbackId.submit_form,
@@ -291,9 +280,9 @@ def add_timeline_event(incident: Incident):
         "element": {
             "type": "radio_buttons",
             "initial_option": {
-                    "text": {"type": "plain_text", "text": "AM"},
-                    "value": "AM",
-                },
+                "text": {"type": "plain_text", "text": "AM"},
+                "value": "AM",
+            },
             "options": [
                 {
                     "text": {"type": "plain_text", "text": "AM"},
@@ -308,30 +297,6 @@ def add_timeline_event(incident: Incident):
         "optional": False,
     }
     modal_template["blocks"].append(am_pm_block)
-
-    timezone_block = {
-        "type": "input",
-        "block_id": AddTimelineEventBlockId.timezone,
-        "label": {"type": "plain_text", "text": "Time Zone"},
-        "element": {
-            "type": "radio_buttons",
-            "initial_option": {
-                "value": "profile",
-                "text": {"type": "plain_text", "text": "Local time from Slack profile"},
-            },
-            "options": [
-                {
-                    "text": {"type": "plain_text", "text": "Local time from Slack profile"},
-                    "value": "profile",
-                },
-                {
-                    "text": {"type": "plain_text", "text": "Coordinated Universal Time (UTC)"},
-                    "value": "UTC",
-                },
-            ],
-        },
-    }
-    modal_template["blocks"].append(timezone_block)
 
     description_block = {
         "type": "input",

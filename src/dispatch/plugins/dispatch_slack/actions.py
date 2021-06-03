@@ -456,7 +456,6 @@ def handle_add_learned_lesson(
     )
 
 
-
 def dialog_action_functions(action: str):
     """Interprets the action and routes it to the appropriate function."""
     action_mappings = {
