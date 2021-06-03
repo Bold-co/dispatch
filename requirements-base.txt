@@ -8,10 +8,12 @@ aiofiles==0.7.0
     # via -r requirements-base.in
 aiohttp==3.7.4.post0
     # via -r requirements-base.in
-alembic==1.6.4
+alembic==1.6.5
     # via -r requirements-base.in
 arrow==1.1.0
     # via -r requirements-base.in
+asgiref==3.3.4
+    # via uvicorn
 async-timeout==3.0.1
     # via aiohttp
 attrs==19.3.0
@@ -89,7 +91,7 @@ fastapi==0.65.1
     # via -r requirements-base.in
 google-api-core==1.26.1
     # via google-api-python-client
-google-api-python-client==2.5.0
+google-api-python-client==2.7.0
     # via -r requirements-base.in
 google-auth-httplib2==0.1.0
     # via google-api-python-client
@@ -339,12 +341,12 @@ typing-extensions==3.7.4.3
     #   pydantic
 uritemplate==3.0.1
     # via google-api-python-client
-urllib3==1.26.4
+urllib3==1.26.5
     # via
     #   pdpyras
     #   requests
     #   sentry-sdk
-uvicorn==0.13.4
+uvicorn==0.14.0
     # via -r requirements-base.in
 validators==0.18.2
     # via sqlalchemy-searchable
