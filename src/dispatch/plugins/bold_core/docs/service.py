@@ -3,8 +3,7 @@ from typing import Any, List
 
 from codaio import Coda, Document, Cell
 
-from dispatch.common.utils.date import date_to_tz
-from dispatch.config import INCIDENT_TRACKING_SHEET_RANGE
+from dispatch.common.utils.date import date_to_tz, date_diff
 from ..config import CODA_API_KEY, CODA_TEMPLATE_ID
 
 log = logging.getLogger(__name__)
@@ -68,6 +67,11 @@ def create_coda_review(document_id: str, **kwargs):
         ref = coda.create_doc(title=incident_title, source_doc=CODA_TEMPLATE_ID)
         doc = Document(ref["id"], coda=coda)
 
+        # Resolution times
+        started_at = events[0].started_at
+        mttd = date_diff(start_date=started_at, end_date=reported_at)
+        mttr = date_diff(start_date=started_at, end_date=stable_at)
+
         # Title table
         title_map = {
             'Id incidente': name,
@@ -91,9 +95,11 @@ def create_coda_review(document_id: str, **kwargs):
 
         # Resolution time
         status_map = {
-            'Fecha del evento': date_to_tz(events[0].started_at),
+            'Fecha del evento': date_to_tz(started_at),
             'Fecha de detección': date_to_tz(reported_at),
-            'Fecha de resolución': date_to_tz(stable_at)
+            'Fecha de resolución': date_to_tz(stable_at),
+            'MTTD': mttd,
+            'MTTR': mttr
         }
 
         set_row_values(doc=doc, table_id='Tiempo de resolución', value_map=status_map)
@@ -184,7 +190,7 @@ def replace_text(client: Any, document_id: str, replacements: List[str]):
     return client.batchUpdate(documentId=document_id, body=body).execute()
 
 
-def add_row(client: Any, document_id: str, params: List[List[str]]):
+def add_row(client: Any, document_id: str, params: List[List[str]], range: str):
     """Add row in specified document."""
     try:
         resource = {
@@ -194,7 +200,7 @@ def add_row(client: Any, document_id: str, params: List[List[str]]):
 
         client.values().append(
             spreadsheetId=document_id,
-            range=INCIDENT_TRACKING_SHEET_RANGE,
+            range=range,
             body=resource,
             valueInputOption="USER_ENTERED"
         ).execute()

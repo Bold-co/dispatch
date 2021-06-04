@@ -381,13 +381,13 @@ def add_timeline_event_from_submitted_form(
     event_hour = parsed_form_data.get(AddTimelineEventBlockId.hour)["value"]
     event_am_pm_selection = parsed_form_data.get(AddTimelineEventBlockId.am_pm)["value"]
     event_minute = parsed_form_data.get(AddTimelineEventBlockId.minute)["value"]
-    event_timezone_selection = parsed_form_data.get(AddTimelineEventBlockId.timezone)["value"]
     event_description = parsed_form_data.get(AddTimelineEventBlockId.description)
 
     participant = participant_service.get_by_incident_id_and_email(
         db_session=db_session, incident_id=incident_id, email=user_email
     )
 
+    event_timezone = "UTC"
     participant_profile = get_user_profile_by_email(slack_client, user_email)
     if participant_profile.get("tz"):
         event_timezone = participant_profile.get("tz")

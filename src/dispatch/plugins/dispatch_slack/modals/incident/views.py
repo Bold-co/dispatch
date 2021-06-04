@@ -84,16 +84,6 @@ def report_incident(
         "type": "modal",
         "title": {"type": "plain_text", "text": "Incident Report"},
         "blocks": [
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": "If you suspect an incident and require help, "
-                                "please fill out the following to the best of your abilities.",
-                    }
-                ],
-            },
             title_input_block(initial_value=title),
             description_input_block(initial_value=description),
             project_select_block(db_session=db_session, initial_option=project),

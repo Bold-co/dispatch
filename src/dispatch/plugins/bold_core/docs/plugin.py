@@ -7,7 +7,8 @@
 """
 import logging
 
-from dispatch.common.utils.date import date_to_tz
+from dispatch.common.utils.date import date_diff, date_to_tz
+from dispatch.config import INCIDENT_TRACKING_SHEET_RANGE, INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE
 from dispatch.decorators import apply, counter, timer
 from dispatch.plugins.bases import DocumentPlugin
 from dispatch.plugins.bold_core.docs.service import create_coda_review, replace_text, add_row
@@ -54,15 +55,33 @@ class BoldDocumentPlugin(DocumentPlugin):
 
         incident = kwargs.get("incident")
 
-        name = incident.name
-        priority = incident.incident_priority.name
-        type = incident.incident_type.name
-        title = incident.title
-        description = incident.description
-        reported_at = date_to_tz(incident.reported_at)
+        try:
+            name = incident.name
+            priority = incident.incident_priority.name
+            type = incident.incident_type.name
+            title = incident.title
+            description = incident.description
+            reported_at = date_to_tz(incident.reported_at)
+            stable_at = date_to_tz(incident.stable_at)
+            events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
+            started_at = date_to_tz(events[0].started_at)
+
+            mttd = date_diff(start_date=events[0].started_at, end_date=incident.reported_at)
+            mttr = date_diff(start_date=events[0].started_at, end_date=incident.stable_at)
+
+            add_row(client=client, document_id=document_id,
+                    params=[[name], [title], [priority], [started_at],
+                            [reported_at], [stable_at], [type], [description],
+                            [mttd], [mttr]],
+                    range=INCIDENT_TRACKING_SHEET_RANGE)
+        except Exception as e:
+            log.exception(e)
 
         try:
-            add_row(client=client, document_id=document_id,
-                    params=[[name], [title], [priority], [reported_at], [type], [description]])
+            feedback = incident.feedback
+            for lesson in feedback:
+                add_row(client=client, document_id=document_id,
+                        params=[[lesson.feedback]],
+                        range=INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE)
         except Exception as e:
             log.exception(e)
