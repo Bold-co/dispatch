@@ -1190,7 +1190,6 @@ def incident_add_or_reactivate_participant_flow(
     user_email: str,
     incident_id: int,
     service_id: int = 0,
-    role: ParticipantRoleType = None,
     event: dict = None,
     db_session=None,
 ) -> Participant:
@@ -1220,7 +1219,7 @@ def incident_add_or_reactivate_participant_flow(
     if not participant:
         # we add the participant to the incident
         participant = participant_flows.add_participant(
-            user_email, incident, db_session, service_id=service_id, role=role
+            user_email, incident, db_session, service_id=service_id
         )
     else:
         if not participant.active_roles:
