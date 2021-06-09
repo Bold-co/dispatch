@@ -56,7 +56,9 @@ codaio==0.6.5
 coverage==5.5
     # via -r requirements-dev.in
 cryptography==3.4.7
-    # via oauthlib
+    # via
+    #   oauthlib
+    #   pyopenssl
 cymem==2.0.5
     # via
     #   preshed
@@ -195,6 +197,8 @@ pygments==2.8.1
     # via ipython
 pyjwt==2.1.0
     # via oauthlib
+pyopenssl==20.0.1
+    # via -r requirements-dev.in
 pyparsing==2.4.7
     # via packaging
 pytest==6.2.4
@@ -242,6 +246,7 @@ six==1.15.0
     #   bcrypt
     #   jira
     #   patsy
+    #   pyopenssl
     #   python-dateutil
     #   tenacity
     #   validators

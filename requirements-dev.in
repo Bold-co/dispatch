@@ -35,3 +35,4 @@ statsmodels~=0.12.2
 boto3~=1.17.8
 validators~=0.18.2
 setuptools~=54.2.0
+pyopenssl==20.0.1
