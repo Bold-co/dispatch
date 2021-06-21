@@ -6,14 +6,12 @@
 """
 import logging
 
-from dispatch.config import DISPATCH_UI_URL
+from dispatch.config import DISPATCH_UI_URL, DISPATCH_HELP_SLACK_CHANNEL
 from dispatch.conversation.enums import ConversationCommands
 from dispatch.database.core import SessionLocal, resolve_attr
 from dispatch.document import service as document_service
 from dispatch.incident.enums import IncidentStatus
 from dispatch.incident.models import Incident, IncidentRead
-
-from dispatch.notification import service as notification_service
 from dispatch.messaging.strings import (
     INCIDENT_CLOSED_INFORMATION_REVIEW_REMINDER_NOTIFICATION,
     INCIDENT_CLOSED_RATING_FEEDBACK_NOTIFICATION,
@@ -33,12 +31,12 @@ from dispatch.messaging.strings import (
     INCIDENT_STATUS_CHANGE,
     INCIDENT_STATUS_REMINDER,
     INCIDENT_TYPE_CHANGE,
-    MessageType,
+    MessageType, INCIDENT_CREATED_NOTIFICATION,
 )
+from dispatch.notification import service as notification_service
 from dispatch.participant import service as participant_service
 from dispatch.participant_role import service as participant_role_service
 from dispatch.plugin import service as plugin_service
-
 
 log = logging.getLogger(__name__)
 
@@ -287,6 +285,23 @@ def send_incident_created_notifications(incident: Incident, db_session: SessionL
         class_instance=incident,
         notification_params=notification_params,
     )
+
+    plugin = plugin_service.get_active_instance(
+        db_session=db_session, project_id=incident.project.id, plugin_type="conversation"
+    )
+
+    if DISPATCH_HELP_SLACK_CHANNEL:
+        notification_kwargs.update({"conversation": f"#{incident.conversation.resource_id}"})
+        notification_kwargs.update({"conversation_weblink": incident.conversation.weblink})
+
+        plugin.instance.send(
+            DISPATCH_HELP_SLACK_CHANNEL,
+            "Incident Notification",
+            INCIDENT_CREATED_NOTIFICATION,
+            notification_type=MessageType.incident_notification,
+            persist=False,
+            **notification_kwargs
+        )
 
     log.debug("Incident created notifications sent.")
 

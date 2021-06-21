@@ -11,6 +11,8 @@ def date_to_tz(date: datetime):
 
 def date_diff_in_seconds(end_date: datetime, start_date: datetime):
     timedelta = end_date - start_date
+    if timedelta.days < 0:
+        return 0
     return timedelta.days * 24 * 3600 + timedelta.seconds
 
 

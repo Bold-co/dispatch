@@ -123,14 +123,6 @@ def create(*, db_session, task_in: TaskCreate) -> Task:
         tickets=tickets
     )
 
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description="New incident task created",
-        details={"weblink": task.weblink},
-        incident_id=incident.id,
-    )
-
     db_session.add(task)
     db_session.commit()
 

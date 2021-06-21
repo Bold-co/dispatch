@@ -16,7 +16,7 @@ from dispatch.plugins.dispatch_slack import service as dispatch_slack_service
 from dispatch.report import flows as report_flows
 from dispatch.report.models import ExecutiveReportCreate, TacticalReportCreate
 from dispatch.task import service as task_service
-from dispatch.task.models import TaskStatus, TaskCreate
+from dispatch.task.models import TaskStatus, TaskCreate, Task, TaskUpdate
 from .config import (
     SLACK_COMMAND_ASSIGN_ROLE_SLUG,
     SLACK_COMMAND_ENGAGE_ONCALL_SLUG,
@@ -50,6 +50,7 @@ from .modals.workflow.handlers import run_workflow_submitted_form, update_workfl
 from .modals.workflow.views import RunWorkflowCallbackId
 from .service import get_user_email, send_message
 from ...feedback.enums import FeedbackRating
+from ...feedback.messaging import send_learned_lesson_notification
 from ...feedback.models import FeedbackCreate
 from ...messaging.strings import INCIDENT_TASK_NEW_NOTIFICATION
 from ...task.flows import send_task_notification
@@ -228,11 +229,13 @@ def update_task_status(
     external_task_id = base64_decode(external_task_id_b64)
 
     resolve = True
+    task_status = TaskStatus.resolved
     if action_type == "reopen":
         resolve = False
+        task_status = TaskStatus.open
 
     # we only update the external task allowing syncing to care of propagation to dispatch
-    task = task_service.get_by_resource_id(db_session=db_session, resource_id=external_task_id)
+    task = task_service.get(db_session=db_session, task_id=external_task_id)
 
     # avoid external calls if we are already in the desired state
     if resolve and task.status == TaskStatus.resolved:
@@ -245,20 +248,24 @@ def update_task_status(
         dispatch_slack_service.send_ephemeral_message(slack_client, channel_id, user_id, message)
         return
 
-    # we don't currently have a good way to get the correct file_id (we don't store a task <-> relationship)
-    # lets try in both the incident doc and PIR doc
-    drive_task_plugin = plugin_service.get_active_instance(
-        db_session=db_session, project_id=task.incident.project.id, plugin_type="task"
-    )
+    if task.incident.incident_review_document:
+        # we don't currently have a good way to get the correct file_id (we don't store a task <-> relationship)
+        # lets try in both the incident doc and PIR doc
+        drive_task_plugin = plugin_service.get_active_instance(
+            db_session=db_session, project_id=task.incident.project.id, plugin_type="task"
+        )
 
-    try:
-        file_id = task.incident.incident_document.resource_id
-        drive_task_plugin.instance.update(file_id, external_task_id, resolved=resolve)
-    except Exception:
-        file_id = task.incident.incident_review_document.resource_id
-        drive_task_plugin.instance.update(file_id, external_task_id, resolved=resolve)
+        try:
+            file_id = task.incident.incident_document.resource_id
+            drive_task_plugin.instance.update(file_id, external_task_id, resolved=resolve)
+        except Exception:
+            file_id = task.incident.incident_review_document.resource_id
+            drive_task_plugin.instance.update(file_id, external_task_id, resolved=resolve)
+    else:
+        task_in = TaskUpdate(**{'status': task_status, 'assignees': []})
+        task_service.update(db_session=db_session, task_in=task_in, task=task)
 
-    status = "resolved" if task.status == TaskStatus.open else "re-opened"
+    status = "resolved" if task_status == TaskStatus.resolved else "re-opened"
     message = f"Task successfully {status}."
     dispatch_slack_service.send_ephemeral_message(slack_client, channel_id, user_id, message)
 
@@ -454,6 +461,8 @@ def handle_add_learned_lesson(
         conversation_id=user_id,
         text="Thank you for your feedback!",
     )
+
+    send_learned_lesson_notification(incident=incident, feedback=feedback, db_session=db_session)
 
 
 def dialog_action_functions(action: str):

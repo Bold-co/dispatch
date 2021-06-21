@@ -16,7 +16,7 @@ from dispatch.plugin import service as plugin_service
 
 from .enums import ReportTypes
 from .models import Report
-
+from ..config import DISPATCH_HELP_SLACK_CHANNEL
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def send_tactical_report_to_conversation(
         needs=needs,
     )
 
-    log.debug("Tactical report sent to conversation {incident.conversation.channel_id}.")
+    log.debug(f"Tactical report sent to conversation {incident.conversation.channel_id}.")
 
 
 def send_tactical_report_to_tactical_group(
@@ -99,6 +99,57 @@ def send_tactical_report_to_tactical_group(
     )
 
     log.debug(f"Tactical report sent to tactical group {incident.tactical_group.email}.")
+
+
+def send_executive_report_to_conversation(
+    incident_id: int, executive_report: Report, db_session: SessionLocal
+):
+    """Sends a tactical report to the conversation."""
+    # we load the incident instance
+    incident = incident_service.get(db_session=db_session, incident_id=incident_id)
+
+    plugin = plugin_service.get_active_instance(
+        db_session=db_session, project_id=incident.project.id, plugin_type="conversation"
+    )
+
+    if not plugin:
+        log.warning("Tactical report not sent, no conversation plugin enabled.")
+        return
+
+    template = INCIDENT_EXECUTIVE_REPORT.copy()
+    template.insert(0, {"title": "Incident Executive Report",
+                        "text": "A new incident executive report has been created"})
+
+    plugin.instance.send(
+        incident.conversation.channel_id,
+        "Incident Executive Report",
+        template,
+        notification_type=MessageType.incident_executive_report,
+        persist=True,
+        name=incident.name,
+        title=incident.title,
+        current_status=executive_report.details.get("current_status"),
+        overview=executive_report.details.get("overview"),
+        next_steps=executive_report.details.get("next_steps"),
+        weblink=executive_report.document.weblink
+    )
+
+    if DISPATCH_HELP_SLACK_CHANNEL:
+        plugin.instance.send(
+            DISPATCH_HELP_SLACK_CHANNEL,
+            "Incident Executive Report",
+            template,
+            notification_type=MessageType.incident_executive_report,
+            persist=True,
+            name=incident.name,
+            title=incident.title,
+            current_status=executive_report.details.get("current_status"),
+            overview=executive_report.details.get("overview"),
+            next_steps=executive_report.details.get("next_steps"),
+            weblink=executive_report.document.weblink
+        )
+
+    log.debug(f"Executive report sent to conversation {incident.conversation.channel_id}.")
 
 
 def send_executive_report_to_notifications_group(

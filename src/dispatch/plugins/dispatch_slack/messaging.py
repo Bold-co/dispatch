@@ -180,7 +180,7 @@ def create_incident_reported_confirmation_message(
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "This is a confirmation that you have reported a security incident "
+                "text": "This is a confirmation that you have reported an incident "
                         "with the following information. You'll get invited to a Slack conversation soon.",
             },
         },

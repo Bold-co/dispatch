@@ -1,16 +1,16 @@
 import logging
 from typing import List
 
-from dispatch.config import DISPATCH_HELP_EMAIL, INCIDENT_RESPONSE_TEAM_EMAIL
+from dispatch.config import DISPATCH_HELP_EMAIL, INCIDENT_RESPONSE_TEAM_EMAIL, DISPATCH_HELP_SLACK_CHANNEL
 from dispatch.database.core import SessionLocal
 from dispatch.messaging.strings import (
     INCIDENT_FEEDBACK_DAILY_REPORT,
-    MessageType,
+    MessageType, LEARNED_LESSON_NOTIFICATION, INCIDENT_TITLE,
 )
 from dispatch.plugin import service as plugin_service
 
 from .models import Feedback
-
+from .. import Incident
 
 log = logging.getLogger(__name__)
 
@@ -59,3 +59,46 @@ def send_incident_feedback_daily_report(
     )
 
     log.debug(f"Incident feedback daily report sent to {commander_email}.")
+
+
+def send_learned_lesson_notification(
+    feedback: Feedback, incident: Incident, db_session: SessionLocal
+):
+    """
+    Sends an incident feedback daily report to all incident commanders who received feedback.
+    """
+    plugin = plugin_service.get_active_instance(
+        db_session=db_session, project_id=incident.project.id, plugin_type="conversation"
+    )
+
+    if not plugin:
+        log.warning("Incident feedback notification not sent. Conversation plugin is not enabled.")
+        return
+
+    notification_kwargs = {
+        "name": incident.name,
+        "title": incident.title,
+        "lessons": feedback.feedback
+    }
+
+    template = LEARNED_LESSON_NOTIFICATION.copy()
+
+    plugin.instance.send(
+        incident.conversation.channel_id,
+        "Incident Notification",
+        template,
+        notification_type=MessageType.incident_notification,
+        persist=False,
+        **notification_kwargs
+    )
+
+    if DISPATCH_HELP_SLACK_CHANNEL:
+        template.insert(1, INCIDENT_TITLE)
+        plugin.instance.send(
+            DISPATCH_HELP_SLACK_CHANNEL,
+            "Incident Notification",
+            template,
+            notification_type=MessageType.incident_notification,
+            persist=False,
+            **notification_kwargs
+        )

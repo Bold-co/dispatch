@@ -14,6 +14,7 @@ from .config import (
     SLACK_API_BOT_TOKEN,
     SLACK_USER_ID_OVERRIDE,
 )
+from ...config import DISPATCH_HELP_EMAIL
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def resolve_user(client: Any, user_id: str):
 def chunks(ids, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(ids), n):
-        yield ids[i : i + n]
+        yield ids[i: i + n]
 
 
 def paginated(data_key):
@@ -211,7 +212,10 @@ def get_user_email(client: Any, user_id: str):
 async def get_user_email_async(client: Any, user_id: str):
     """Gets the user's email."""
     user_info = await get_user_info_by_id_async(client, user_id)
-    return user_info["profile"]["email"]
+    email = user_info["profile"].get("email")
+    if not email:
+        email = DISPATCH_HELP_EMAIL
+    return email
 
 
 def get_user_username(client: Any, user_id: str):
@@ -227,25 +231,16 @@ def get_user_avatar_url(client: Any, email: str):
 # @functools.lru_cache()
 async def get_conversations_by_user_id_async(client: Any, user_id: str):
     """Gets the list of public and private conversations a user is a member of."""
-    result = await make_call_async(
-        client,
-        "users.conversations",
-        user=user_id,
-        types="public_channel",
-        exclude_archived="true",
-    )
-    public_conversations = [c["name"] for c in result["channels"]]
 
     result = await make_call_async(
         client,
         "users.conversations",
         user=user_id,
-        types="private_channel",
+        types="private_channel,public_channel",
         exclude_archived="true",
     )
-    private_conversations = [c["name"] for c in result["channels"]]
 
-    return public_conversations, private_conversations
+    return [c["name"] for c in result["channels"]]
 
 
 # note this will get slower over time, we might exclude archived to make it sane

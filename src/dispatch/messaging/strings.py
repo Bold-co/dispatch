@@ -174,7 +174,7 @@ INCIDENT_DOCUMENT_DESCRIPTIONS = {
 
 INCIDENT_PARTICIPANT_WELCOME_DESCRIPTION = """
 You\'re being contacted because we think you may
-be able to help us during this information security incident.
+be able to help us during this incident.
 Please review the content below and join us in the
 incident Slack channel.""".replace(
     "\n", " "
@@ -385,6 +385,12 @@ INCIDENT_COMMANDER = {
     "text": INCIDENT_COMMANDER_DESCRIPTION,
 }
 
+INCIDENT_CONVERSATION = {
+    "title": "Conversation",
+    "title_link": "{{conversation_weblink}}",
+    "text": "{{conversation}}.\n" + INCIDENT_CONVERSATION_DESCRIPTION,
+}
+
 INCIDENT_CONFERENCE = {
     "title": "Conference",
     "title_link": "{{conference_weblink}}",
@@ -493,6 +499,40 @@ INCIDENT_NOTIFICATION.extend(
         INCIDENT_COMMANDER,
     ]
 )
+
+INCIDENT_CREATED_WELCOME = {
+    "type": "header",
+    "text": "A new incident has been created"
+}
+
+INCIDENT_CREATED_NOTIFICATION = [
+    INCIDENT_CREATED_WELCOME,
+    INCIDENT_TITLE,
+    INCIDENT_DESCRIPTION,
+    INCIDENT_STATUS,
+    INCIDENT_TYPE,
+    INCIDENT_PRIORITY,
+    INCIDENT_REPORTER,
+    INCIDENT_COMMANDER,
+    INCIDENT_CONVERSATION,
+    INCIDENT_STORAGE,
+    INCIDENT_CONFERENCE
+]
+
+LEARNED_LESSON_TITLE = {
+    "type": "header",
+    "text": "A new learned lesson has been added"
+}
+
+LEARNED_LESSONS = {
+    "title": "Learned lesson",
+    "text": "{{lessons}}"
+}
+
+LEARNED_LESSON_NOTIFICATION = [
+    LEARNED_LESSON_TITLE,
+    {"title": "Learned lessons:", "text": "{{lessons}}"}
+]
 
 INCIDENT_TACTICAL_REPORT = [
     {"title": "Incident Tactical Report", "text": INCIDENT_TACTICAL_REPORT_DESCRIPTION},

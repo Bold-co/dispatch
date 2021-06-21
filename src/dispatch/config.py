@@ -93,6 +93,9 @@ DISPATCH_UI_URL = config("DISPATCH_UI_URL", default="http://localhost:8000")
 DISPATCH_HELP_EMAIL = config("DISPATCH_HELP_EMAIL", default="help@example.com")
 DISPATCH_HELP_SLACK_CHANNEL = config("DISPATCH_HELP_SLACK_CHANNEL", default="#general")
 
+DISPATCH_CHECK_PERMISSIONS = config("DISPATCH_CHECK_PERMISSIONS", default=False)
+DISPATCH_CHECK_CHANNELS = config("DISPATCH_CHECK_CHANNELS", default=False)
+
 # authentication
 DISPATCH_AUTHENTICATION_PROVIDER_SLUG = config(
     "DISPATCH_AUTHENTICATION_PROVIDER_SLUG", default="dispatch-auth-provider-basic"

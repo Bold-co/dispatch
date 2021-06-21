@@ -10,8 +10,13 @@ def configure_logging():
     else:
         logging.basicConfig(level=LOG_LEVEL)
 
+    print(logging.root.manager.loggerDict)
+
     uvicorn_logger = logging.getLogger('uvicorn.access')
     uvicorn_logger.setLevel(logging.CRITICAL)
+
+    muiltipart_logger = logging.getLogger('multipart.multipart')
+    muiltipart_logger.setLevel(logging.CRITICAL)
 
 
 

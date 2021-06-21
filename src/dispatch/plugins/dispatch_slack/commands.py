@@ -62,6 +62,7 @@ from .modals.incident.handlers import (
     create_update_participant_modal,
 )
 from .modals.workflow.handlers import create_run_workflow_modal
+from ...config import DISPATCH_CHECK_PERMISSIONS, DISPATCH_CHECK_CHANNELS
 
 log = logging.getLogger(__name__)
 
@@ -79,6 +80,9 @@ def check_command_restrictions(
     command: str, user_email: str, incident_id: int, db_session: Session
 ) -> bool:
     """Checks the current user's role to determine what commands they are allowed to run."""
+    if not DISPATCH_CHECK_PERMISSIONS:
+        return True
+
     # some commands are sensitive and we only let non-participants execute them
     command_permissions = {
         SLACK_COMMAND_UPDATE_INCIDENT_SLUG: [
@@ -182,27 +186,25 @@ async def handle_slack_command(*, db_session, client, request, background_tasks)
             return create_command_run_in_nonincident_conversation_message(command)
 
         # We get the list of public and private conversations the Slack bot is a member of
-        (
-            public_conversations,
-            private_conversations,
-        ) = await dispatch_slack_service.get_conversations_by_user_id_async(
-            client, SLACK_APP_USER_SLUG
-        )
-
-        # We get the name of conversation where the command was run
-        conversation_id = request.get("channel_id")
-        conversation_name = await dispatch_slack_service.get_conversation_name_by_id_async(
-            client, conversation_id
-        )
-
-        if (
-            not conversation_name
-            or conversation_name not in public_conversations + private_conversations
-        ):
-            # We let the user know in which public conversations they can run the command
-            return create_command_run_in_conversation_where_bot_not_present_message(
-                command, public_conversations
+        if DISPATCH_CHECK_CHANNELS:
+            conversations = await dispatch_slack_service.get_conversations_by_user_id_async(
+                client, SLACK_APP_USER_SLUG
             )
+
+            # We get the name of conversation where the command was run
+            conversation_id = request.get("channel_id")
+            conversation_name = await dispatch_slack_service.get_conversation_name_by_id_async(
+                client, conversation_id
+            )
+
+            if (
+                not conversation_name
+                or conversation_name not in conversations
+            ):
+                # We let the user know in which public conversations they can run the command
+                return create_command_run_in_conversation_where_bot_not_present_message(
+                    command, conversations
+                )
 
     user_id = request.get("user_id")
     user_email = await dispatch_slack_service.get_user_email_async(client, user_id)
@@ -314,7 +316,7 @@ def list_tasks(
                     "accessory": {
                         "type": "button",
                         "text": {"type": "plain_text", "text": button_text},
-                        "value": f"{action_type}-{base64_encode(task.resource_id)}",
+                        "value": f"{action_type}-{base64_encode(str(task.id))}",
                     },
                 }
             )

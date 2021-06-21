@@ -59,8 +59,7 @@ def update_incident(db_session: SessionLocal, channel_id: str, incident_id: int 
                 db_session=db_session,
                 initial_option=incident.incident_priority,
                 project_id=incident.project.id,
-            ),
-            tag_multi_select_block(initial_options=incident.tags),
+            )
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Submit"},
@@ -99,8 +98,7 @@ def report_incident(
         modal_template["callback_id"] = ReportIncidentCallbackId.submit_form
         modal_template["blocks"] += [
             incident_type_select_block(db_session=db_session, project_id=project.id),
-            incident_priority_select_block(db_session=db_session, project_id=project.id),
-            tag_multi_select_block(),
+            incident_priority_select_block(db_session=db_session, project_id=project.id)
         ]
 
     return modal_template

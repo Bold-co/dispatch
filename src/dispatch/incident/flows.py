@@ -365,12 +365,12 @@ def set_conversation_topic(incident: Incident, db_session: SessionLocal):
         return
 
     conversation_topic = (
-        f":fire: {incident.title} :fire: - "
-        f"Type: {incident.incident_type.name} - "
-        f"Priority: {incident.incident_priority.name} - "
+        f":fire: {incident.conference.weblink} :fire: - "
+        f"Title: {incident.title} - "
         f"Status: {incident.status} - "
-        f":helmet_with_white_cross: {incident.commander.individual.name}"
+        f"Priority: {incident.incident_priority.name}"
     )
+
     plugin = plugin_service.get_active_instance(
         db_session=db_session, project_id=incident.project.id, plugin_type="conversation"
     )
@@ -739,6 +739,20 @@ def incident_stable_status_flow(incident: Incident, db_session=None):
     db_session.add(incident)
     db_session.commit()
 
+
+def incident_closed_status_flow(incident: Incident, db_session=None):
+    """Runs the incident closed flow."""
+
+    # we inactivate all participants
+    inactivate_incident_participants(incident, db_session)
+
+    # we set the closed time
+    incident.closed_at = datetime.utcnow()
+
+    # set time immediately
+    db_session.add(incident)
+    db_session.commit()
+
     if incident.incident_review_document:
         log.debug("Incident review document already created... skipping creation.")
         return
@@ -821,8 +835,6 @@ def incident_stable_status_flow(incident: Incident, db_session=None):
             conference_challenge=resolve_attr(incident, "conference.challenge"),
         )
         # Only creates the review document
-        print(f"** Plugin config: {document_plugin.configuration}")
-        print(f"** Priority: {incident.incident_priority.name}")
 
         document_plugin.instance.create_review(
             incident.incident_review_document.resource_id,
@@ -847,19 +859,6 @@ def incident_stable_status_flow(incident: Incident, db_session=None):
         db_session,
     )
 
-    db_session.add(incident)
-    db_session.commit()
-
-
-def incident_closed_status_flow(incident: Incident, db_session=None):
-    """Runs the incident closed flow."""
-    # we inactivate all participants
-    inactivate_incident_participants(incident, db_session)
-
-    # we set the closed time
-    incident.closed_at = datetime.utcnow()
-
-    # set time immediately
     db_session.add(incident)
     db_session.commit()
 

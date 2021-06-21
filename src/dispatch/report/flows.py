@@ -16,7 +16,7 @@ from .enums import ReportTypes
 from .messaging import (
     send_executive_report_to_notifications_group,
     send_tactical_report_to_conversation,
-    send_tactical_report_to_tactical_group,
+    send_tactical_report_to_tactical_group, send_executive_report_to_conversation,
 )
 from .models import ReportCreate, TacticalReportCreate, ExecutiveReportCreate
 from .service import create, get_all_by_incident_id_and_type
@@ -194,6 +194,7 @@ def create_executive_report(
     )
 
     # we send the executive report to the notifications group
+    send_executive_report_to_conversation(incident.id, executive_report, db_session)
     send_executive_report_to_notifications_group(incident.id, executive_report, db_session)
 
     return executive_report
