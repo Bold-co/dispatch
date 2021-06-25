@@ -11,7 +11,7 @@ from dispatch.common.utils.date import date_diff, date_to_tz
 from dispatch.config import INCIDENT_TRACKING_SHEET_RANGE, INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE
 from dispatch.decorators import apply, counter, timer
 from dispatch.plugins.bases import DocumentPlugin
-from dispatch.plugins.bold_core.docs.service import create_coda_review, replace_text, add_row
+from dispatch.plugins.bold_core.docs.service import create_coda_review, replace_text, add_row, split_values
 from dispatch.plugins.dispatch_google import docs as google_docs_plugin
 from dispatch.plugins.dispatch_google.common import get_service
 
@@ -37,7 +37,6 @@ class BoldDocumentPlugin(DocumentPlugin):
 
     def update(self, document_id: str, **kwargs):
         """Replaces text in document."""
-        # TODO escape and use f strings? (kglisson)
         kwargs = {"{{" + k + "}}": v for k, v in kwargs.items()}
         client = get_service("docs", "v1", self.scopes).documents()
         return replace_text(client, document_id, kwargs)
@@ -54,12 +53,11 @@ class BoldDocumentPlugin(DocumentPlugin):
         client = get_service("sheets", "v4", self.scopes).spreadsheets()
 
         incident = kwargs.get("incident")
-
+        name = incident.name
+        title = incident.title
         try:
-            name = incident.name
             priority = incident.incident_priority.name
             type = incident.incident_type.name
-            title = incident.title
             description = incident.description
             reported_at = date_to_tz(incident.reported_at)
             stable_at = date_to_tz(incident.stable_at)
@@ -78,10 +76,10 @@ class BoldDocumentPlugin(DocumentPlugin):
             log.exception(e)
 
         try:
-            feedback = incident.feedback
-            for lesson in feedback:
+            lessons = split_values(set(o.feedback for o in incident.feedback))
+            for lesson in lessons:
                 add_row(client=client, document_id=document_id,
-                        params=[[lesson.feedback]],
+                        params=[[lesson.feedback], [name], [title]],
                         range=INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE)
         except Exception as e:
             log.exception(e)

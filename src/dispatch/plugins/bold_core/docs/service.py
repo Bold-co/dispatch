@@ -9,6 +9,15 @@ from ..config import CODA_API_KEY, CODA_TEMPLATE_ID
 log = logging.getLogger(__name__)
 
 
+def split_values(values: set):
+    single_values = []
+    for value in values:
+        item = value.split("\n")
+        for single in (x for x in item if x and x != ""):
+            single_values.append(single)
+    return single_values
+
+
 def set_row_values(doc: Document, table_id: str, value_map: dict):
 
     try:
@@ -145,13 +154,17 @@ def update_timeline(doc, events):
 
 def update_tasks(doc, tasks):
     try:
-        table = doc.get_table("Tareas")
-        cells = []
-        for task in tasks:
-            check = Cell(column='Column 1', value_storage=(task.status == "Resolved"))
-            value = Cell(column='Column 2', value_storage=task.description)
-            cells.append([check, value])
-        table.upsert_rows(cells)
+        if tasks:
+            table = doc.get_table("Tareas")
+            cells = []
+            for task in tasks:
+                status = task.status == "Resolved"
+                item = task.description.split("\n")
+                for single in (x for x in item if x and x != ""):
+                    check = Cell(column='Column 1', value_storage=status)
+                    value = Cell(column='Column 2', value_storage=single)
+                    cells.append([check, value])
+            table.upsert_rows(cells)
     except Exception as e:
         log.exception(e)
 
@@ -168,12 +181,14 @@ def get_impact(incident):
 
 def update_feedback(doc, feedback):
     try:
-        table = doc.get_table("Lecciones aprendidas")
-        cells = []
-        for lesson in feedback:
-            check = Cell(column='Column 1', value_storage=lesson.feedback)
-            cells.append([check])
-        table.upsert_rows(cells)
+        if feedback:
+            table = doc.get_table("Lecciones aprendidas")
+            cells = []
+            lessons = split_values(set(o.feedback for o in feedback))
+            for lesson in lessons:
+                check = Cell(column='Column 1', value_storage=lesson)
+                cells.append([check])
+            table.upsert_rows(cells)
     except Exception as e:
         log.exception(e)
 

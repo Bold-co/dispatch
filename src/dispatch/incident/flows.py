@@ -103,13 +103,6 @@ def inactivate_incident_participants(incident: Incident, db_session: SessionLoca
     for participant in incident.participants:
         participant_flows.inactivate_participant(participant.individual.email, incident, db_session)
 
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description="Incident participants inactivated",
-        incident_id=incident.id,
-    )
-
 
 def create_incident_ticket(incident: Incident, db_session: SessionLocal):
     """Create an external ticket for tracking."""
@@ -136,13 +129,6 @@ def create_incident_ticket(incident: Incident, db_session: SessionLocal):
             db_session=db_session,
         )
         ticket.update({"resource_type": plugin.plugin.slug})
-
-        event_service.log(
-            db_session=db_session,
-            source=plugin.plugin.title,
-            description="Ticket created",
-            incident_id=incident.id,
-        )
 
         return ticket
 
@@ -252,13 +238,17 @@ def create_conference(incident: Incident, participants: List[str], db_session: S
 
 def delete_conference(incident: Incident, db_session: SessionLocal):
     """Deletes the conference."""
-    conference = conference_service.get_by_incident_id(
-        db_session=db_session, incident_id=incident.id
-    )
-    plugin = plugin_service.get_active_instance(
-        db_session=db_session, project_id=incident.project.id, plugin_type="conference"
-    )
-    plugin.instance.delete(conference.conference_id)
+    try:
+        conference = conference_service.get_by_incident_id(
+            db_session=db_session, incident_id=incident.id
+        )
+        plugin = plugin_service.get_active_instance(
+            db_session=db_session, project_id=incident.project.id, plugin_type="conference"
+        )
+        plugin.instance.delete(conference.conference_id)
+    except Exception as ex:
+        log.error("The conversation can't be deleted")
+        log.exception(ex)
 
 
 def create_incident_storage(
@@ -348,13 +338,6 @@ def create_conversation(incident: Incident, db_session: SessionLocal):
     conversation = plugin.instance.create(incident.name, is_private=is_private)
     conversation.update({"resource_type": plugin.plugin.slug, "resource_id": conversation["name"]})
 
-    event_service.log(
-        db_session=db_session,
-        source=plugin.plugin.title,
-        description="Incident conversation created",
-        incident_id=incident.id,
-    )
-
     return conversation
 
 
@@ -378,12 +361,6 @@ def set_conversation_topic(incident: Incident, db_session: SessionLocal):
     try:
         plugin.instance.set_topic(incident.conversation.channel_id, conversation_topic)
     except Exception as e:
-        event_service.log(
-            db_session=db_session,
-            source="Dispatch Core App",
-            description=f"Setting the incident conversation topic failed. Reason: {e}",
-            incident_id=incident.id,
-        )
         log.exception(e)
 
 
@@ -398,12 +375,6 @@ def add_participants_to_conversation(
     try:
         plugin.instance.add(incident.conversation.channel_id, participant_emails)
     except Exception as e:
-        event_service.log(
-            db_session=db_session,
-            source="Dispatch Core App",
-            description=f"Adding participant(s) to incident conversation failed. Reason: {e}",
-            incident_id=incident.id,
-        )
         log.exception(e)
 
 
@@ -519,12 +490,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                 )
 
         except Exception as e:
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description=f"Creation of tactical and notification groups failed. Reason: {e}",
-                incident_id=incident.id,
-            )
             log.exception(e)
 
     storage_plugin = plugin_service.get_active_instance(
@@ -553,12 +518,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
             )
 
         except Exception as e:
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description=f"Creation of incident storage failed. Reason: {e}",
-                incident_id=incident.id,
-            )
             log.exception(e)
 
         # we create collaboration documents, don't fail the whole flow if this fails
@@ -577,12 +536,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                 )
 
         except Exception as e:
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description=f"Creation of incident documents failed. Reason: {e}",
-                incident_id=incident.id,
-            )
             log.exception(e)
 
     conference_plugin = plugin_service.get_active_instance(
@@ -610,12 +563,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
             )
 
         except Exception as e:
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description=f"Creation of incident conference failed. Reason: {e}",
-                incident_id=incident.id,
-            )
             log.exception(e)
 
     # we create the conversation for real-time communications
@@ -640,12 +587,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
             # we set the conversation topic
             set_conversation_topic(incident, db_session)
         except Exception as e:
-            event_service.log(
-                db_session=db_session,
-                source="Dispatch Core App",
-                description=f"Creation of incident conversation failed. Reason: {e}",
-                incident_id=incident.id,
-            )
             log.exception(e)
 
     # we update the incident ticket
@@ -677,12 +618,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                     conference_challenge=resolve_attr(incident, "conference.challenge"),
                 )
             except Exception as e:
-                event_service.log(
-                    db_session=db_session,
-                    source="Dispatch Core App",
-                    description=f"Incident documents rendering failed. Reason: {e}",
-                    incident_id=incident.id,
-                )
                 log.exception(e)
 
     # we defer this setup until after resources have been created
@@ -792,13 +727,6 @@ def incident_closed_status_flow(incident: Incident, db_session=None):
         file_id=incident_review_document["id"],
     )
 
-    event_service.log(
-        db_session=db_session,
-        source=storage_plugin.plugin.title,
-        description="Incident review document added to storage",
-        incident_id=incident.id,
-    )
-
     document_in = DocumentCreate(
         name=incident_review_document["name"],
         resource_id=incident_review_document["id"],
@@ -881,9 +809,11 @@ def incident_closed_status_flow(incident: Incident, db_session=None):
 
     # Close groups
     delete_participant_groups(incident=incident, db_session=db_session)
+    # Close conference
+    delete_conference(incident=incident, db_session=db_session)
 
     # we send a direct message to the incident commander asking to review
-    # the incident's information and to tag the incident if appropiate
+    # the incident's information and to tag the incident if appropriate
     send_incident_closed_information_review_reminder(incident, db_session)
 
     # we send a direct message to all participants asking them

@@ -140,7 +140,7 @@ def send_executive_report_to_conversation(
             "Incident Executive Report",
             template,
             notification_type=MessageType.incident_executive_report,
-            persist=True,
+            persist=False,
             name=incident.name,
             title=incident.title,
             current_status=executive_report.details.get("current_status"),

@@ -79,13 +79,6 @@ def assign_role_flow(
             participant_role=assignee_role,
         )
 
-        event_service.log(
-            db_session=db_session,
-            source="Dispatch Core App",
-            description=f"{assignee_participant.individual.name} has been assigned the role of {assignee_role}",
-            incident_id=incident_id,
-        )
-
         return "role_assigned"
 
     log.debug(f"We were not able to assign the {assignee_role} role to {assignee_email}.")

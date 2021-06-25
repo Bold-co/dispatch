@@ -1,14 +1,14 @@
 import logging
 from typing import List
 
-from dispatch.config import DISPATCH_HELP_EMAIL, INCIDENT_RESPONSE_TEAM_EMAIL, DISPATCH_HELP_SLACK_CHANNEL
+from dispatch.config import DISPATCH_HELP_EMAIL, INCIDENT_RESPONSE_TEAM_EMAIL, DISPATCH_HELP_SLACK_CHANNEL, \
+    DISPATCH_LESSONS_SLACK_CHANNEL
 from dispatch.database.core import SessionLocal
 from dispatch.messaging.strings import (
     INCIDENT_FEEDBACK_DAILY_REPORT,
-    MessageType, LEARNED_LESSON_NOTIFICATION, INCIDENT_TITLE,
+    MessageType, LEARNED_LESSON_NOTIFICATION, INCIDENT_TITLE_ES,
 )
 from dispatch.plugin import service as plugin_service
-
 from .models import Feedback
 from .. import Incident
 
@@ -92,8 +92,8 @@ def send_learned_lesson_notification(
         **notification_kwargs
     )
 
-    if DISPATCH_HELP_SLACK_CHANNEL:
-        template.insert(1, INCIDENT_TITLE)
+    if DISPATCH_LESSONS_SLACK_CHANNEL:
+        template.insert(1, INCIDENT_TITLE_ES)
         plugin.instance.send(
             DISPATCH_HELP_SLACK_CHANNEL,
             "Incident Notification",

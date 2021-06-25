@@ -354,6 +354,8 @@ INCIDENT_NAME = {
 
 INCIDENT_TITLE = {"title": "Title", "text": "{{title}}"}
 
+INCIDENT_TITLE_ES = {"title": "Incidente", "text": "{{name}} - {{title}}"}
+
 INCIDENT_DESCRIPTION = {"title": "Description", "text": "{{description}}"}
 
 INCIDENT_STATUS = {
@@ -521,17 +523,17 @@ INCIDENT_CREATED_NOTIFICATION = [
 
 LEARNED_LESSON_TITLE = {
     "type": "header",
-    "text": "A new learned lesson has been added"
+    "text": "Nueva lección aprendida"
 }
 
 LEARNED_LESSONS = {
-    "title": "Learned lesson",
+    "title": "Lecciones aprendidas",
     "text": "{{lessons}}"
 }
 
 LEARNED_LESSON_NOTIFICATION = [
     LEARNED_LESSON_TITLE,
-    {"title": "Learned lessons:", "text": "{{lessons}}"}
+    {"title": "Lecciones:", "text": "{{lessons}}"}
 ]
 
 INCIDENT_TACTICAL_REPORT = [

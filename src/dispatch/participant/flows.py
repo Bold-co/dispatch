@@ -1,7 +1,6 @@
 import logging
 
 from dispatch.database.core import SessionLocal
-from dispatch.event import service as event_service
 from dispatch.incident.models import Incident
 from dispatch.individual import service as individual_service
 from dispatch.participant_role import service as participant_role_service
@@ -46,13 +45,6 @@ def add_participant(
     db_session.add(incident)
     db_session.commit()
 
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description=f"{individual.name} added to incident with {participant_role.role} role",
-        incident_id=incident.id,
-    )
-
     return participant
 
 
@@ -71,13 +63,6 @@ def remove_participant(user_email: str, incident: Incident, db_session: SessionL
 
         db_session.add(participant)
         db_session.commit()
-
-        event_service.log(
-            db_session=db_session,
-            source="Dispatch Core App",
-            description=f"{participant.individual.name} has been removed",
-            incident_id=incident.id,
-        )
 
 
 def inactivate_participant(user_email: str, incident: Incident, db_session: SessionLocal):
@@ -101,13 +86,6 @@ def inactivate_participant(user_email: str, incident: Incident, db_session: Sess
         participant_role_service.renounce_role(
             db_session=db_session, participant_role=participant_active_role
         )
-
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description=f"{participant.individual.name} has been inactivated",
-        incident_id=incident.id,
-    )
 
     return True
 
@@ -143,12 +121,5 @@ def reactivate_participant(
 
     db_session.add(participant)
     db_session.commit()
-
-    event_service.log(
-        db_session=db_session,
-        source="Dispatch Core App",
-        description=f"{participant.individual.name} has been reactivated",
-        incident_id=incident.id,
-    )
 
     return True
