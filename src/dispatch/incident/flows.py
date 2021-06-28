@@ -707,88 +707,87 @@ def incident_closed_status_flow(incident: Incident, db_session=None):
     # incident review document is optional
     if not template:
         log.warning("No incident review template specified.")
-        return
 
-    incident_review_document = storage_plugin.instance.copy_file(
-        folder_id=incident.storage.resource_id,
-        file_id=template.resource_id,
-        name=incident_review_document_name,
-    )
-
-    incident_review_document.update(
-        {
-            "name": incident_review_document_name,
-            "resource_type": INCIDENT_RESOURCE_INCIDENT_REVIEW_DOCUMENT,
-        }
-    )
-
-    storage_plugin.instance.move_file(
-        new_folder_id=incident.storage.resource_id,
-        file_id=incident_review_document["id"],
-    )
-
-    document_in = DocumentCreate(
-        name=incident_review_document["name"],
-        resource_id=incident_review_document["id"],
-        resource_type=incident_review_document["resource_type"],
-        project=incident.project,
-        weblink=incident_review_document["weblink"],
-    )
-    incident.documents.append(
-        document_service.create(db_session=db_session, document_in=document_in)
-    )
-
-    # we update the incident review document
-    document_plugin = plugin_service.get_active_instance(
-        db_session=db_session, project_id=incident.project.id, plugin_type="document"
-    )
-
-    if document_plugin:
-        document_plugin.instance.update(
-            incident.incident_review_document.resource_id,
-            name=incident.name,
-            priority=incident.incident_priority.name,
-            status=incident.status,
-            type=incident.incident_type.name,
-            title=incident.title,
-            description=incident.description,
-            commander_fullname=incident.commander.individual.name,
-            stable_at=date_to_tz(incident.stable_at),
-            reported_at=date_to_tz(incident.reported_at),
-            conversation_weblink=resolve_attr(incident, "conversation.weblink"),
-            document_weblink=resolve_attr(incident, "incident_document.weblink"),
-            storage_weblink=resolve_attr(incident, "storage.weblink"),
-            ticket_weblink=resolve_attr(incident, "ticket.weblink"),
-            conference_weblink=resolve_attr(incident, "conference.weblink"),
-            conference_challenge=resolve_attr(incident, "conference.challenge"),
+        incident_review_document = storage_plugin.instance.copy_file(
+            folder_id=incident.storage.resource_id,
+            file_id=template.resource_id,
+            name=incident_review_document_name,
         )
-        # Only creates the review document
 
-        document_plugin.instance.create_review(
-            incident.incident_review_document.resource_id,
-            incident=incident,
-            db_session=db_session
+        incident_review_document.update(
+            {
+                "name": incident_review_document_name,
+                "resource_type": INCIDENT_RESOURCE_INCIDENT_REVIEW_DOCUMENT,
+            }
         )
-        # Updates the review sheet
-        if tracking:
-            document_plugin.instance.update_review_sheet(
-                tracking.resource_id,
+
+        storage_plugin.instance.move_file(
+            new_folder_id=incident.storage.resource_id,
+            file_id=incident_review_document["id"],
+        )
+
+        document_in = DocumentCreate(
+            name=incident_review_document["name"],
+            resource_id=incident_review_document["id"],
+            resource_type=incident_review_document["resource_type"],
+            project=incident.project,
+            weblink=incident_review_document["weblink"],
+        )
+        incident.documents.append(
+            document_service.create(db_session=db_session, document_in=document_in)
+        )
+
+        # we update the incident review document
+        document_plugin = plugin_service.get_active_instance(
+            db_session=db_session, project_id=incident.project.id, plugin_type="document"
+        )
+
+        if document_plugin:
+            document_plugin.instance.update(
+                incident.incident_review_document.resource_id,
+                name=incident.name,
+                priority=incident.incident_priority.name,
+                status=incident.status,
+                type=incident.incident_type.name,
+                title=incident.title,
+                description=incident.description,
+                commander_fullname=incident.commander.individual.name,
+                stable_at=date_to_tz(incident.stable_at),
+                reported_at=date_to_tz(incident.reported_at),
+                conversation_weblink=resolve_attr(incident, "conversation.weblink"),
+                document_weblink=resolve_attr(incident, "incident_document.weblink"),
+                storage_weblink=resolve_attr(incident, "storage.weblink"),
+                ticket_weblink=resolve_attr(incident, "ticket.weblink"),
+                conference_weblink=resolve_attr(incident, "conference.weblink"),
+                conference_challenge=resolve_attr(incident, "conference.challenge"),
+            )
+            # Only creates the review document
+
+            document_plugin.instance.create_review(
+                incident.incident_review_document.resource_id,
                 incident=incident,
                 db_session=db_session
             )
-    else:
-        log.warning("No document plugin enabled, could not update template.")
+            # Updates the review sheet
+            if tracking:
+                document_plugin.instance.update_review_sheet(
+                    tracking.resource_id,
+                    incident=incident,
+                    db_session=db_session
+                )
+        else:
+            log.warning("No document plugin enabled, could not update template.")
 
-    # we send a notification about the incident review document to the conversation
-    send_incident_review_document_notification(
-        incident.conversation.channel_id,
-        incident.incident_review_document.weblink,
-        incident,
-        db_session,
-    )
+        # we send a notification about the incident review document to the conversation
+        send_incident_review_document_notification(
+            incident.conversation.channel_id,
+            incident.incident_review_document.weblink,
+            incident,
+            db_session,
+        )
 
-    db_session.add(incident)
-    db_session.commit()
+        db_session.add(incident)
+        db_session.commit()
 
     # we archive the conversation
     convo_plugin = plugin_service.get_active_instance(
