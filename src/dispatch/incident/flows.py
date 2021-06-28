@@ -707,7 +707,7 @@ def incident_closed_status_flow(incident: Incident, db_session=None):
     # incident review document is optional
     if not template:
         log.warning("No incident review template specified.")
-
+    else:
         incident_review_document = storage_plugin.instance.copy_file(
             folder_id=incident.storage.resource_id,
             file_id=template.resource_id,
