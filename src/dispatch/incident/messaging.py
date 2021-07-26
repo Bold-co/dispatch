@@ -266,6 +266,8 @@ def send_incident_created_notifications(incident: Incident, db_session: SessionL
         "contact_fullname": incident.commander.individual.name,
         "contact_weblink": incident.commander.individual.weblink,
         "incident_id": incident.id,
+        "team_name": incident.team_name,
+        "report_source": incident.report_source
     }
 
     faq_doc = document_service.get_incident_faq_document(db_session=db_session)

@@ -22,6 +22,7 @@ from dispatch.plugins.dispatch_slack.service import (
     update_modal_with_user,
     get_user_profile_by_email
 )
+from dispatch.project import service as project_service
 from .enums import (
     IncidentBlockId,
     UpdateParticipantBlockId,
@@ -106,6 +107,8 @@ def report_incident_from_submitted_form(
         description=parsed_form_data[IncidentBlockId.description],
         incident_type=parsed_form_data[IncidentBlockId.type]["value"],
         incident_priority=parsed_form_data[IncidentBlockId.priority]["value"],
+        team=parsed_form_data[IncidentBlockId.team]["name"],
+        report_source=parsed_form_data[IncidentBlockId.report_source]["name"]
     )
 
     send_ephemeral_message(
@@ -120,12 +123,17 @@ def report_incident_from_submitted_form(
     for t in parsed_form_data.get(IncidentBlockId.tags, []):
         tags.append({"id": t["value"]})
 
+    project = project_service.get_default(db_session=db_session)
+
     incident_in = IncidentCreate(
         title=parsed_form_data[IncidentBlockId.title],
         description=parsed_form_data[IncidentBlockId.description],
         incident_type={"name": parsed_form_data[IncidentBlockId.type]["value"]},
         incident_priority={"name": parsed_form_data[IncidentBlockId.priority]["value"]},
-        project={"name": parsed_form_data[IncidentBlockId.project]["value"]},
+        project={"name": project.name},
+        report_source=parsed_form_data[IncidentBlockId.report_source]["name"],
+        team_id=parsed_form_data[IncidentBlockId.team]["value"],
+        team_name=parsed_form_data[IncidentBlockId.team]["name"],
         tags=tags,
     )
 

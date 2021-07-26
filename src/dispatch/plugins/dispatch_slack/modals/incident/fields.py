@@ -1,9 +1,12 @@
 import logging
 from typing import List
 from sqlalchemy.orm import Session
+
+from dispatch.config import INCIDENT_REPORT_CHANNELS
 from dispatch.incident.enums import IncidentStatus
 
 from dispatch.incident.models import Incident
+from dispatch.incident import service as incident_service
 from dispatch.incident_priority import service as incident_priority_service
 from dispatch.incident_priority.models import IncidentPriority
 from dispatch.incident_type import service as incident_type_service
@@ -148,6 +151,50 @@ def project_select_block(db_session: Session, initial_option: dict = None):
                 )
             }
         )
+    return block
+
+
+def team_select_block():
+    """Builds the incident team select block."""
+    team_options = []
+    for team in incident_service.get_teams():
+        team_options.append(option_from_template(text=team["name"], value=team["id"]))
+
+    block = {
+        "block_id": IncidentBlockId.team,
+        "type": "input",
+        "label": {
+            "text": "Team",
+            "type": "plain_text",
+        },
+        "element": {
+            "type": "static_select",
+            "placeholder": {"type": "plain_text", "text": "Select Team"},
+            "options": team_options
+        },
+    }
+    return block
+
+
+def report_source_select_block():
+    """Builds the incident report source select block."""
+    report_source_options = []
+    for source in sorted(INCIDENT_REPORT_CHANNELS.split(",")):
+        report_source_options.append(option_from_template(text=source, value=source))
+
+    block = {
+        "block_id": IncidentBlockId.report_source,
+        "type": "input",
+        "label": {
+            "text": "Report Source",
+            "type": "plain_text",
+        },
+        "element": {
+            "type": "static_select",
+            "placeholder": {"type": "plain_text", "text": "Report Source"},
+            "options": report_source_options
+        },
+    }
     return block
 
 

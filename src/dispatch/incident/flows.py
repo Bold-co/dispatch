@@ -8,10 +8,11 @@
 .. moduleauthor:: Marc Vilanova <mvilanova@netflix.com>
 """
 import logging
-
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, List
 
+from dispatch.conference import service as conference_service
+from dispatch.conference.models import ConferenceCreate
 from dispatch.config import (
     INCIDENT_RESOURCE_INCIDENT_REVIEW_DOCUMENT,
     INCIDENT_RESOURCE_INVESTIGATION_DOCUMENT,
@@ -19,11 +20,8 @@ from dispatch.config import (
     INCIDENT_RESOURCE_NOTIFICATIONS_GROUP,
     INCIDENT_RESOURCE_TACTICAL_GROUP,
     INCIDENT_STORAGE_FOLDER_ID,
-    INCIDENT_STORAGE_OPEN_ON_CLOSE,
+    INCIDENT_STORAGE_OPEN_ON_CLOSE, REPORT_INCIDENTS,
 )
-
-from dispatch.conference import service as conference_service
-from dispatch.conference.models import ConferenceCreate
 from dispatch.conversation import service as conversation_service
 from dispatch.conversation.models import ConversationCreate
 from dispatch.database.core import SessionLocal, resolve_attr
@@ -51,7 +49,6 @@ from dispatch.service import service as service_service
 from dispatch.storage import service as storage_service
 from dispatch.ticket import service as ticket_service
 from dispatch.ticket.models import TicketCreate
-
 from .messaging import (
     get_suggested_document_items,
     send_incident_closed_information_review_reminder,
@@ -67,6 +64,8 @@ from .messaging import (
     send_incident_welcome_participant_messages,
 )
 from .models import Incident, IncidentStatus
+from .service import send_created_incident_quality_event, send_stabilized_incident_quality_event, \
+    send_closed_incident_quality_event
 from ..common.utils.date import date_to_tz
 
 log = logging.getLogger(__name__)
@@ -654,6 +653,9 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
     db_session.add(incident)
     db_session.commit()
 
+    if REPORT_INCIDENTS:
+        send_created_incident_quality_event(incident)
+
 
 def incident_active_status_flow(incident: Incident, db_session=None):
     """Runs the incident active flow."""
@@ -673,6 +675,9 @@ def incident_stable_status_flow(incident: Incident, db_session=None):
     # set time immediately
     db_session.add(incident)
     db_session.commit()
+
+    if REPORT_INCIDENTS:
+        send_stabilized_incident_quality_event(incident)
 
 
 def incident_closed_status_flow(incident: Incident, db_session=None):
@@ -818,6 +823,9 @@ def incident_closed_status_flow(incident: Incident, db_session=None):
     # we send a direct message to all participants asking them
     # to rate and provide feedback about the incident
     send_incident_rating_feedback_message(incident, db_session)
+
+    if REPORT_INCIDENTS:
+        send_closed_incident_quality_event(incident)
 
 
 def conversation_topic_dispatcher(
@@ -1198,3 +1206,5 @@ def incident_remove_participant_flow(
 
         # we remove the participant to the tactical group
         remove_participant_from_tactical_group(user_email, incident, db_session)
+
+

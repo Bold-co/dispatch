@@ -91,8 +91,8 @@ TIME_ZONE = config("TIME_ZONE", default="America/Bogota")
 
 DISPATCH_UI_URL = config("DISPATCH_UI_URL", default="http://localhost:8000")
 DISPATCH_HELP_EMAIL = config("DISPATCH_HELP_EMAIL", default="help@example.com")
-DISPATCH_HELP_SLACK_CHANNEL = config("DISPATCH_HELP_SLACK_CHANNEL", default="#general")
-DISPATCH_LESSONS_SLACK_CHANNEL = config("DISPATCH_LESSONS_SLACK_CHANNEL", default="#general")
+DISPATCH_HELP_SLACK_CHANNEL = config("DISPATCH_HELP_SLACK_CHANNEL", default="#dispatch-test")
+DISPATCH_LESSONS_SLACK_CHANNEL = config("DISPATCH_LESSONS_SLACK_CHANNEL", default="#dispatch-test")
 
 DISPATCH_CHECK_PERMISSIONS = config("DISPATCH_CHECK_PERMISSIONS", default=False)
 DISPATCH_CHECK_CHANNELS = config("DISPATCH_CHECK_CHANNELS", default=False)
@@ -241,7 +241,7 @@ ANNUAL_COST_EMPLOYEE = config("ANNUAL_COST_EMPLOYEE", cast=int, default="650000"
 BUSINESS_HOURS_YEAR = config("BUSINESS_HOURS_YEAR", cast=int, default="2080")
 
 INCIDENT_PREFIX = config(
-    "INCIDENT_PREFIX", default="INC-0"
+    "INCIDENT_PREFIX", default="TEST-INC-0"
 )
 
 # Tracking
@@ -251,4 +251,20 @@ INCIDENT_TRACKING_SHEET_RANGE = config(
 
 INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE = config(
     "INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE", default="LearnedLessons!A1:A1"
+)
+
+INCIDENT_DEVOPS_ENDPOINT = config(
+    "INCIDENT_DEVOPS_ENDPOINT", default="https://localhost/events"
+)
+
+FILTER_FUNCTIONAL_TEAMS = config(
+    "FILTER_FUNCTIONAL_TEAMS", default=True
+)
+
+REPORT_INCIDENTS = config(
+    "REPORT_INCIDENTS", default=True
+)
+
+INCIDENT_REPORT_CHANNELS = config(
+    "INCIDENT_REPORT_CHANNELS", default="Alert,Final User,Support Channel,Sales Team,Teach Team,Bold Team"
 )

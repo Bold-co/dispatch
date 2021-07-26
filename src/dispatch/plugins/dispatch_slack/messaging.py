@@ -165,7 +165,7 @@ def create_command_run_in_conversation_where_bot_not_present_message(
 
 
 def create_incident_reported_confirmation_message(
-    title: str, description: str, incident_type: str, incident_priority: str
+    title: str, description: str, incident_type: str, incident_priority: str, team: str, report_source: str
 ):
     """Creates an incident reported confirmation message."""
     return [
@@ -197,6 +197,14 @@ def create_incident_reported_confirmation_message(
             "type": "section",
             "text": {"type": "mrkdwn", "text": f"*Incident Priority*: {incident_priority}"},
         },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"*Team*: {team}"},
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"*Report Source*: {report_source}"},
+        }
     ]
 
 

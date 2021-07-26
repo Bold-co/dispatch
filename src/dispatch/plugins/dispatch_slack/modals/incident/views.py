@@ -26,7 +26,7 @@ from .fields import (
     status_select_block,
     incident_priority_select_block,
     incident_type_select_block,
-    tag_multi_select_block,
+    tag_multi_select_block, team_select_block, report_source_select_block,
 )
 
 
@@ -78,28 +78,23 @@ def report_incident(
     description: str = None,
 ):
     """Builds all blocks required for the reporting incident modal."""
-    project = project_service.get_by_name(db_session=db_session, name=project_name)
+    project = project_service.get_default(db_session=db_session)
     modal_template = {
         "type": "modal",
         "title": {"type": "plain_text", "text": "Incident Report"},
         "blocks": [
             title_input_block(initial_value=title),
             description_input_block(initial_value=description),
-            project_select_block(db_session=db_session, initial_option=project),
+            incident_type_select_block(db_session=db_session, project_id=project.id),
+            incident_priority_select_block(db_session=db_session, project_id=project.id),
+            team_select_block(),
+            report_source_select_block()
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Submit"},
-        "callback_id": ReportIncidentCallbackId.update_view,
+        "callback_id": ReportIncidentCallbackId.submit_form,
         "private_metadata": json.dumps({"channel_id": str(channel_id)}),
     }
-
-    # switch from update to submit when we have a project
-    if project:
-        modal_template["callback_id"] = ReportIncidentCallbackId.submit_form
-        modal_template["blocks"] += [
-            incident_type_select_block(db_session=db_session, project_id=project.id),
-            incident_priority_select_block(db_session=db_session, project_id=project.id)
-        ]
 
     return modal_template
 

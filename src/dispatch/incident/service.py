@@ -1,23 +1,28 @@
+import logging
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from dispatch.database.core import SessionLocal
+import requests
+from cachetools.func import lru_cache
 
+from dispatch.database.core import SessionLocal
 from dispatch.event import service as event_service
 from dispatch.incident_cost import service as incident_cost_service
 from dispatch.incident_priority import service as incident_priority_service
 from dispatch.incident_type import service as incident_type_service
+from dispatch.participant import flows as participant_flows
 from dispatch.participant_role.models import ParticipantRoleType
+from dispatch.plugin import service as plugin_service
+from dispatch.project import service as project_service
 from dispatch.tag import service as tag_service
 from dispatch.tag.models import TagUpdate, TagCreate
 from dispatch.term import service as term_service
 from dispatch.term.models import TermUpdate
-from dispatch.project import service as project_service
-from dispatch.plugin import service as plugin_service
-from dispatch.participant import flows as participant_flows
-
 from .enums import IncidentStatus
 from .models import Incident, IncidentUpdate
+from ..config import INCIDENT_DEVOPS_ENDPOINT, FILTER_FUNCTIONAL_TEAMS
+
+log = logging.getLogger(__name__)
 
 
 def assign_incident_role(
@@ -76,9 +81,9 @@ def get_by_name(*, db_session, project_id: int, incident_name: str) -> Optional[
     """Returns an incident based on the given name."""
     return (
         db_session.query(Incident)
-        .filter(Incident.name == incident_name)
-        .filter(Incident.project_id == project_id)
-        .first()
+            .filter(Incident.name == incident_name)
+            .filter(Incident.project_id == project_id)
+            .first()
     )
 
 
@@ -93,11 +98,11 @@ def get_all_by_status(
     """Returns all incidents based on the given status."""
     return (
         db_session.query(Incident)
-        .filter(Incident.status == status)
-        .filter(Incident.project_id == project_id)
-        .offset(skip)
-        .limit(limit)
-        .all()
+            .filter(Incident.status == status)
+            .filter(Incident.project_id == project_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
     )
 
 
@@ -110,34 +115,34 @@ def get_all_last_x_hours_by_status(
     if status == IncidentStatus.active.value:
         return (
             db_session.query(Incident)
-            .filter(Incident.status == IncidentStatus.active.value)
-            .filter(Incident.created_at >= now - timedelta(hours=hours))
-            .filter(Incident.project_id == project_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
+                .filter(Incident.status == IncidentStatus.active.value)
+                .filter(Incident.created_at >= now - timedelta(hours=hours))
+                .filter(Incident.project_id == project_id)
+                .offset(skip)
+                .limit(limit)
+                .all()
         )
 
     if status == IncidentStatus.stable.value:
         return (
             db_session.query(Incident)
-            .filter(Incident.status == IncidentStatus.stable.value)
-            .filter(Incident.stable_at >= now - timedelta(hours=hours))
-            .filter(Incident.project_id == project_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
+                .filter(Incident.status == IncidentStatus.stable.value)
+                .filter(Incident.stable_at >= now - timedelta(hours=hours))
+                .filter(Incident.project_id == project_id)
+                .offset(skip)
+                .limit(limit)
+                .all()
         )
 
     if status == IncidentStatus.closed.value:
         return (
             db_session.query(Incident)
-            .filter(Incident.status == IncidentStatus.closed.value)
-            .filter(Incident.closed_at >= now - timedelta(hours=hours))
-            .filter(Incident.project_id == project_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
+                .filter(Incident.status == IncidentStatus.closed.value)
+                .filter(Incident.closed_at >= now - timedelta(hours=hours))
+                .filter(Incident.project_id == project_id)
+                .offset(skip)
+                .limit(limit)
+                .all()
         )
 
 
@@ -147,11 +152,11 @@ def get_all_by_incident_type(
     """Returns all incidents with the given incident type."""
     return (
         db_session.query(Incident)
-        .filter(Incident.incident_type.name == incident_type)
-        .filter(Incident.project_id == project_id)
-        .offset(skip)
-        .limit(limit)
-        .all()
+            .filter(Incident.incident_type.name == incident_type)
+            .filter(Incident.project_id == project_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
     )
 
 
@@ -165,6 +170,9 @@ def create(
     status: str,
     description: str,
     tags: List[dict],
+    team_id: str = None,
+    team_name: str = None,
+    report_source: str = None,
     project: str = None,
     visibility: str = None,
 ) -> Incident:
@@ -220,6 +228,9 @@ def create(
         incident_priority=incident_priority,
         visibility=visibility,
         tags=tag_objs,
+        report_source=report_source,
+        team_id=team_id,
+        team_name=team_name,
         project=project,
     )
     db_session.add(incident)
@@ -295,6 +306,8 @@ def update(*, db_session, incident: Incident, incident_in: IncidentUpdate) -> In
             "tags",
             "terms",
             "visibility",
+            "report_source",
+            "team",
             "project",
         },
     )
@@ -321,3 +334,75 @@ def delete(*, db_session, incident_id: int):
     """Deletes an existing incident."""
     db_session.query(Incident).filter(Incident.id == incident_id).delete()
     db_session.commit()
+
+
+class CommunicationError(Exception):
+    ...
+
+
+def send_created_incident_quality_event(incident: Incident):
+    try:
+        events_url = f"{INCIDENT_DEVOPS_ENDPOINT}/incidents/dispatch"
+        data = {
+            "id": incident.name,
+            "reporter_email": incident.reporter.individual.email,
+            "report_source": incident.report_source,
+            "creation_time": incident.created_at.strftime('%Y-%m-%dT%H:%M:%S%Z'),
+            "team_id": incident.team_id
+        }
+        response = requests.post(url=events_url, json=data)
+        if not response.ok:
+            log.error(f"Error posting to bold API: {response.text}")
+    except ConnectionError:
+        log.error(f"Error posting to bold API")
+
+
+def send_stabilized_incident_quality_event(incident: Incident):
+    try:
+        events_url = f"{INCIDENT_DEVOPS_ENDPOINT}/incidents/dispatch"
+        data = {
+            "id": incident.name,
+            "stabilization_time": incident.stable_at.strftime('%Y-%m-%dT%H:%M:%S%Z')
+        }
+        response = requests.patch(url=events_url, json=data)
+        if not response.ok:
+            log.error(f"Error posting to bold API: {response.text}")
+    except ConnectionError:
+        log.error(f"Error posting to bold API")
+
+
+def send_closed_incident_quality_event(incident: Incident):
+    try:
+        events_url = f"{INCIDENT_DEVOPS_ENDPOINT}/incidents/dispatch"
+        events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
+        initial_event_time = events[0].started_at
+        data = {
+            "id": incident.name,
+            "close_time": incident.closed_at.strftime('%Y-%m-%dT%H:%M:%S%Z'),
+            "outage_start_time": initial_event_time.strftime('%Y-%m-%dT%H:%M:%S%Z')
+        }
+        response = requests.patch(url=events_url, json=data)
+        if not response.ok:
+            log.error(f"Error posting to bold API: {response.text}")
+    except ConnectionError:
+        log.error(f"Error posting to bold API")
+
+
+@lru_cache(maxsize=32)
+def get_teams():
+    try:
+        teams_url = f"{INCIDENT_DEVOPS_ENDPOINT}/teams/azure-devops"
+        response = requests.get(url=teams_url)
+
+        if not response.ok:
+            log.error(f"Error posting to bold API: {response.text}")
+            return []
+
+        teams = response.json()["teams"]
+
+        if FILTER_FUNCTIONAL_TEAMS:
+            teams = filter(lambda x: not x.get("is_functional"), teams)
+
+        return sorted(teams, key=lambda x: x.get("name"), reverse=False)
+    except ConnectionError:
+        log.error(f"Error posting to bold API")

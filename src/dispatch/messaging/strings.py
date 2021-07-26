@@ -387,6 +387,16 @@ INCIDENT_COMMANDER = {
     "text": INCIDENT_COMMANDER_DESCRIPTION,
 }
 
+INCIDENT_TEAM = {
+    "title": "Team",
+    "text": "{{ team_name }}",
+}
+
+INCIDENT_REPORT_SOURCE = {
+    "title": "Report source",
+    "text": "{{ report_source }}",
+}
+
 INCIDENT_CONVERSATION = {
     "title": "Conversation",
     "title_link": "{{conversation_weblink}}",
@@ -516,6 +526,8 @@ INCIDENT_CREATED_NOTIFICATION = [
     INCIDENT_PRIORITY,
     INCIDENT_REPORTER,
     INCIDENT_COMMANDER,
+    INCIDENT_TEAM,
+    INCIDENT_REPORT_SOURCE,
     INCIDENT_CONVERSATION,
     INCIDENT_STORAGE,
     INCIDENT_CONFERENCE

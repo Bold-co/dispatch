@@ -74,6 +74,9 @@ class Incident(Base, TimeStampMixin, ProjectMixin):
     description = Column(String, nullable=False)
     status = Column(String, default=IncidentStatus.active.value)
     visibility = Column(String, default=Visibility.open)
+    report_source = Column(String)
+    team_id = Column(String)
+    team_name = Column(String)
 
     # auto generated
     reported_at = Column(DateTime, default=datetime.utcnow)
@@ -274,6 +277,9 @@ class IncidentBase(DispatchBase):
 class IncidentReadNested(IncidentBase):
     id: int
     name: str = None
+    report_source: Optional[str] = None
+    team_id: Optional[str] = None
+    team_name: Optional[str] = None
     reporter: Optional[ParticipantRead]
     commander: Optional[ParticipantRead]
     incident_priority: IncidentPriorityRead
@@ -285,6 +291,9 @@ class IncidentReadNested(IncidentBase):
 
 
 class IncidentCreate(IncidentBase):
+    report_source: Optional[str] = None
+    team_id: Optional[str] = None
+    team_name: Optional[str] = None
     incident_priority: Optional[IncidentPriorityCreate]
     incident_type: Optional[IncidentTypeCreate]
     tags: Optional[List[Any]] = []  # any until we figure out circular imports
@@ -292,6 +301,9 @@ class IncidentCreate(IncidentBase):
 
 
 class IncidentUpdate(IncidentBase):
+    report_source: Optional[str] = None
+    team_id: Optional[str] = None
+    team_name: Optional[str] = None
     incident_priority: IncidentPriorityBase
     incident_type: IncidentTypeBase
     reported_at: Optional[datetime] = None
@@ -307,6 +319,9 @@ class IncidentUpdate(IncidentBase):
 class IncidentRead(IncidentBase):
     id: int
     name: str = None
+    report_source: Optional[str] = None
+    team_id: Optional[str] = None
+    team_name: Optional[str] = None
     primary_team: Any
     primary_location: Any
     reporter: Optional[ParticipantRead]

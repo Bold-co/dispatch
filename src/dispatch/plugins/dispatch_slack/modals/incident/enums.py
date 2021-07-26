@@ -10,6 +10,8 @@ class IncidentBlockId(str, Enum):
     tags = "tags_select_field"
     project = "project_field"
     status = "status_field"
+    team = "team"
+    report_source = "report_source"
 
 
 # report incident
