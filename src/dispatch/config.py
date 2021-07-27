@@ -268,3 +268,11 @@ REPORT_INCIDENTS = config(
 INCIDENT_REPORT_CHANNELS = config(
     "INCIDENT_REPORT_CHANNELS", default="Alert,Final User,Support Channel,Sales Team,Teach Team,Bold Team"
 )
+
+INCIDENT_DEVOPS_USER = config(
+    "INCIDENT_DEVOPS_USER", default="55e92fd5-bc09-4278-be6a-eb06b549a54d"
+)
+
+INCIDENT_DEVOPS_PASSWORD = config(
+    "INCIDENT_DEVOPS_PASSWORD", default="9f8c6819-bbca-46e1-a51f-13f0ccbe743c"
+)

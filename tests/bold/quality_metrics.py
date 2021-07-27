@@ -158,15 +158,14 @@ incidents = [
 ]
 
 for incident in incidents:
-    send_created_incident_quality_event(name=incident.get("name"),
-                                        reporter_email=incident.get("reporter_email"),
-                                        report_source=incident.get("report_source"),
-                                        team_id=incident.get("team_id"),
-                                        creation_time=incident.get("creation_time"))
-    if incident.get("stabilization_time"):
-        send_stabilized_incident_quality_event(name=incident.get("name"),
-                                               stabilization_time=incident.get("stabilization_time"))
-    #  sleep(delay=)
+    # send_created_incident_quality_event(name=incident.get("name"),
+    #                                     reporter_email=incident.get("reporter_email"),
+    #                                     report_source=incident.get("report_source"),
+    #                                     team_id=incident.get("team_id"),
+    #                                     creation_time=incident.get("creation_time"))
+    # if incident.get("stabilization_time"):
+    #     send_stabilized_incident_quality_event(name=incident.get("name"),
+    #                                            stabilization_time=incident.get("stabilization_time"))
 
     if incident.get("close_time") and incident.get("outage_start_time"):
         # print(f"{incident.get('name')} must be closed")

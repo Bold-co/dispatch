@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import requests
 from cachetools.func import lru_cache
+from requests.auth import HTTPBasicAuth
 
 from dispatch.database.core import SessionLocal
 from dispatch.event import service as event_service
@@ -20,7 +21,7 @@ from dispatch.term import service as term_service
 from dispatch.term.models import TermUpdate
 from .enums import IncidentStatus
 from .models import Incident, IncidentUpdate
-from ..config import INCIDENT_DEVOPS_ENDPOINT, FILTER_FUNCTIONAL_TEAMS
+from ..config import INCIDENT_DEVOPS_ENDPOINT, FILTER_FUNCTIONAL_TEAMS, INCIDENT_DEVOPS_USER, INCIDENT_DEVOPS_PASSWORD
 
 log = logging.getLogger(__name__)
 
@@ -350,7 +351,7 @@ def send_created_incident_quality_event(incident: Incident):
             "creation_time": incident.created_at.strftime('%Y-%m-%dT%H:%M:%S%Z'),
             "team_id": incident.team_id
         }
-        response = requests.post(url=events_url, json=data)
+        response = requests.post(url=events_url, json=data, auth=devops_basic_auth())
         if not response.ok:
             log.error(f"Error posting to bold API: {response.text}")
     except ConnectionError:
@@ -364,7 +365,7 @@ def send_stabilized_incident_quality_event(incident: Incident):
             "id": incident.name,
             "stabilization_time": incident.stable_at.strftime('%Y-%m-%dT%H:%M:%S%Z')
         }
-        response = requests.patch(url=events_url, json=data)
+        response = requests.patch(url=events_url, json=data, auth=devops_basic_auth())
         if not response.ok:
             log.error(f"Error posting to bold API: {response.text}")
     except ConnectionError:
@@ -381,7 +382,7 @@ def send_closed_incident_quality_event(incident: Incident):
             "close_time": incident.closed_at.strftime('%Y-%m-%dT%H:%M:%S%Z'),
             "outage_start_time": initial_event_time.strftime('%Y-%m-%dT%H:%M:%S%Z')
         }
-        response = requests.patch(url=events_url, json=data)
+        response = requests.patch(url=events_url, json=data, auth=devops_basic_auth())
         if not response.ok:
             log.error(f"Error posting to bold API: {response.text}")
     except ConnectionError:
@@ -392,11 +393,11 @@ def send_closed_incident_quality_event(incident: Incident):
 def get_teams():
     try:
         teams_url = f"{INCIDENT_DEVOPS_ENDPOINT}/teams/azure-devops"
-        response = requests.get(url=teams_url)
+        response = requests.get(url=teams_url, auth=devops_basic_auth())
 
         if not response.ok:
             log.error(f"Error posting to bold API: {response.text}")
-            return []
+            return get_default_teams()
 
         teams = response.json()["teams"]
 
@@ -406,3 +407,18 @@ def get_teams():
         return sorted(teams, key=lambda x: x.get("name"), reverse=False)
     except ConnectionError:
         log.error(f"Error posting to bold API")
+        return get_default_teams()
+
+
+def devops_basic_auth():
+    return HTTPBasicAuth(username=INCIDENT_DEVOPS_USER, password=INCIDENT_DEVOPS_PASSWORD)
+
+
+def get_default_teams():
+    return [
+        {'id': '8ae1631c-3b5e-4cd1-9ece-c10f8a3f560d', 'name': 'Accounting', 'is_functional': True},
+        {'id': '1e1201e3-13a7-4011-bf79-e4279000800a', 'name': 'Data and Automation', 'is_functional': True},
+        {'id': 'bd7f9b31-8bb4-4ea4-886d-02f41ee7adc3', 'name': 'Growth', 'is_functional': True},
+        {'id': 'a95723a0-bf65-492d-b71b-73b4f877c2bf', 'name': 'Merchants Tools', 'is_functional': True},
+        {'id': '7f336a05-74da-467f-b77e-973279492033', 'name': 'Payments', 'is_functional': True},
+        {'id': '085aa84b-a6c9-46a1-90fd-5dd6379ee8cd', 'name': 'Sales n Ops', 'is_functional': True}]
