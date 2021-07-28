@@ -402,7 +402,7 @@ def get_teams():
         teams = response.json()["teams"]
 
         if FILTER_FUNCTIONAL_TEAMS:
-            teams = filter(lambda x: not x.get("is_functional"), teams)
+            teams = filter(lambda x: x.get("is_functional"), teams)
 
         return sorted(teams, key=lambda x: x.get("name"), reverse=False)
     except ConnectionError:
