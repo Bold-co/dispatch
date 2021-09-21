@@ -578,6 +578,7 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
                 resource_type=conversation["resource_type"],
                 weblink=conversation["weblink"],
                 channel_id=conversation["id"],
+                incident_id=incident_id
             )
             incident.conversation = conversation_service.create(
                 db_session=db_session, conversation_in=conversation_in

@@ -18,7 +18,7 @@ class Conversation(Base, ResourceMixin):
 # Pydantic models...
 class ConversationBase(ResourceBase):
     channel_id: Optional[str]
-
+    incident_id: Optional[str]
 
 class ConversationCreate(ConversationBase):
     pass

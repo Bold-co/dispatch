@@ -2,6 +2,7 @@ import logging
 from typing import Any, List
 
 from codaio import Coda, Document, Cell
+from dispatch.incident.models import Incident
 
 from dispatch.common.utils.date import date_to_tz, date_diff
 from ..config import CODA_API_KEY, CODA_TEMPLATE_ID
@@ -49,7 +50,7 @@ def set_column_values(doc: Document, table_id: str, value_map: dict, column_id: 
 
 def create_coda_review(document_id: str, **kwargs):
     coda = Coda(CODA_API_KEY)
-    incident = kwargs["incident"]
+    incident: Incident = kwargs["incident"]
 
     log.info("**************** CODA ****************")
 
@@ -64,6 +65,8 @@ def create_coda_review(document_id: str, **kwargs):
         commander_fullname = incident.commander.individual.name
         stable_at = incident.stable_at
         reported_at = incident.reported_at
+        report_source = incident.report_source
+        team = incident.team_name
 
         events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
         tasks = incident.tasks
@@ -122,6 +125,8 @@ def create_coda_review(document_id: str, **kwargs):
             'Servicios afectados': "",  # incident['services'],
             'Cuentas AWS afectadas': "",  # incident['aws_accounts'],
             'Incidentes relacionados': "",  # incident['related_incidents']
+            'Origen del reporte': report_source,
+            'Equipo': team,
         }
 
         set_column_values(doc=doc, table_id="Descripción", value_map=description_map, column_id=2)

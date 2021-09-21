@@ -7,6 +7,8 @@
 """
 import logging
 
+from dispatch.incident.models import Incident
+
 from dispatch.common.utils.date import date_diff, date_to_tz
 from dispatch.config import INCIDENT_TRACKING_SHEET_RANGE, INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE
 from dispatch.decorators import apply, counter, timer
@@ -52,7 +54,7 @@ class BoldDocumentPlugin(DocumentPlugin):
         """Creates a row in the review sheet."""
         client = get_service("sheets", "v4", self.scopes).spreadsheets()
 
-        incident = kwargs.get("incident")
+        incident: Incident = kwargs.get("incident")
         name = incident.name
         title = incident.title
         try:
@@ -63,6 +65,8 @@ class BoldDocumentPlugin(DocumentPlugin):
             stable_at = date_to_tz(incident.stable_at)
             events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
             started_at = date_to_tz(events[0].started_at)
+            report_source = incident.report_source
+            team = incident.team_name
 
             mttd = date_diff(start_date=events[0].started_at, end_date=incident.reported_at)
             mttr = date_diff(start_date=events[0].started_at, end_date=incident.stable_at)
@@ -70,7 +74,7 @@ class BoldDocumentPlugin(DocumentPlugin):
             add_row(client=client, document_id=document_id,
                     params=[[name], [title], [priority], [started_at],
                             [reported_at], [stable_at], [type], [description],
-                            [mttd], [mttr]],
+                            [mttd], [mttr], [report_source], [team]],
                     range=INCIDENT_TRACKING_SHEET_RANGE)
         except Exception as e:
             log.exception(e)
