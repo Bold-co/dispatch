@@ -71,17 +71,17 @@ incidents = [
      'close_time': '2021-07-19T15:53:41', 'outage_start_time': '2021-07-14T07:45:00',
      'team_id': '1e1201e3-13a7-4011-bf79-e4279000800a'},
 
-    {'name': 'INC-025', 'reporter_email': 'andres.oviedo@bold.co', 'report_source': 'Teach Team',
+    {'name': 'INC-025', 'reporter_email': 'andres.oviedo@bold.co', 'report_source': 'Tech Team',
      'creation_time': '2021-07-13T19:54:12', 'stabilization_time': '2021-07-14T16:01:09',
      'close_time': '2021-07-21T14:37:07', 'outage_start_time': '2021-07-13T16:00:00',
      'team_id': '085aa84b-a6c9-46a1-90fd-5dd6379ee8cd'},
 
-    {'name': 'INC-024', 'reporter_email': 'nataly.martinez@bold.co', 'report_source': 'Teach Team',
+    {'name': 'INC-024', 'reporter_email': 'nataly.martinez@bold.co', 'report_source': 'Tech Team',
      'creation_time': '2021-07-07T17:17:03', 'stabilization_time': '2021-07-13T20:34:32',
      'close_time': '2021-07-13T20:34:32', 'outage_start_time': '2021-07-01T05:00:00',
      'team_id': '1e1201e3-13a7-4011-bf79-e4279000800a'},
 
-    {'name': 'INC-023', 'reporter_email': 'david.lopez@bold.co', 'report_source': 'Teach Team',
+    {'name': 'INC-023', 'reporter_email': 'david.lopez@bold.co', 'report_source': 'Tech Team',
      'creation_time': '2021-07-01T22:20:08', 'stabilization_time': '2021-07-08T16:20:10',
      'close_time': '2021-07-08T16:20:10', 'outage_start_time': '2021-06-30T04:20:00',
      'team_id': '085aa84b-a6c9-46a1-90fd-5dd6379ee8cd'},
@@ -96,7 +96,7 @@ incidents = [
      'close_time': '2021-07-16T18:00:24', 'outage_start_time': '2021-06-29T23:30:00',
      'team_id': '7f336a05-74da-467f-b77e-973279492033'},
 
-    {'name': 'INC-020', 'reporter_email': 'nataly.martinez@bold.co', 'report_source': 'Teach Support',
+    {'name': 'INC-020', 'reporter_email': 'nataly.martinez@bold.co', 'report_source': 'Tech Support',
      'creation_time': '2021-06-25T21:37:09', 'stabilization_time': '2021-07-21T20:51:54',
      'close_time': None, 'outage_start_time': '2021-06-25T20:50:00',
      'team_id': 'bd7f9b31-8bb4-4ea4-886d-02f41ee7adc3'},

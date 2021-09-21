@@ -354,7 +354,7 @@ def send_created_incident_quality_event(incident: Incident):
         response = requests.post(url=events_url, json=data, auth=devops_basic_auth())
         if not response.ok:
             log.error(f"Error posting to bold API: {response.text}")
-    except ConnectionError:
+    except Exception:
         log.error(f"Error posting to bold API")
 
 
@@ -368,7 +368,7 @@ def send_stabilized_incident_quality_event(incident: Incident):
         response = requests.patch(url=events_url, json=data, auth=devops_basic_auth())
         if not response.ok:
             log.error(f"Error posting to bold API: {response.text}")
-    except ConnectionError:
+    except Exception:
         log.error(f"Error posting to bold API")
 
 
@@ -385,7 +385,7 @@ def send_closed_incident_quality_event(incident: Incident):
         response = requests.patch(url=events_url, json=data, auth=devops_basic_auth())
         if not response.ok:
             log.error(f"Error posting to bold API: {response.text}")
-    except ConnectionError:
+    except Exception:
         log.error(f"Error posting to bold API")
 
 
@@ -405,9 +405,9 @@ def get_teams():
             teams = filter(lambda x: x.get("is_functional"), teams)
 
         return sorted(teams, key=lambda x: x.get("name"), reverse=False)
-    except ConnectionError:
+    except Exception:
         log.error(f"Error posting to bold API")
-        return get_default_teams()
+    return get_default_teams()
 
 
 def devops_basic_auth():

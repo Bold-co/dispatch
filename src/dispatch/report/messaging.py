@@ -10,7 +10,7 @@ from dispatch.messaging.strings import (
     INCIDENT_EXECUTIVE_REPORT,
     INCIDENT_REPORT_REMINDER,
     INCIDENT_TACTICAL_REPORT,
-    MessageType,
+    MessageType, INCIDENT_TITLE_ES, INCIDENT_TITLE,
 )
 from dispatch.plugin import service as plugin_service
 
@@ -117,8 +117,10 @@ def send_executive_report_to_conversation(
         return
 
     template = INCIDENT_EXECUTIVE_REPORT.copy()
+    template.pop(0)
     template.insert(0, {"title": "Incident Executive Report",
                         "text": "A new incident executive report has been created"})
+    template.insert(1, INCIDENT_TITLE_ES)
 
     plugin.instance.send(
         incident.conversation.channel_id,

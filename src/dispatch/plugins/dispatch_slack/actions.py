@@ -48,7 +48,7 @@ from .modals.incident.handlers import (
 )
 from .modals.workflow.handlers import run_workflow_submitted_form, update_workflow_modal
 from .modals.workflow.views import RunWorkflowCallbackId
-from .service import get_user_email, send_message
+from .service import get_user_email, send_message, get_user_info_by_id
 from ...feedback.enums import FeedbackRating
 from ...feedback.messaging import send_learned_lesson_notification
 from ...feedback.models import FeedbackCreate
@@ -452,7 +452,6 @@ def handle_add_learned_lesson(
     feedback = feedback_service.create(db_session=db_session, feedback_in=feedback_in)
 
     incident.feedback.append(feedback)
-
     db_session.add(incident)
     db_session.commit()
 
@@ -462,7 +461,9 @@ def handle_add_learned_lesson(
         text="Thank you for your feedback!",
     )
 
-    send_learned_lesson_notification(incident=incident, feedback=feedback, db_session=db_session)
+    user = get_user_info_by_id(client=slack_client, user_id=user_id)["real_name"]
+
+    send_learned_lesson_notification(incident=incident, feedback=feedback, db_session=db_session, user=user)
 
 
 def dialog_action_functions(action: str):

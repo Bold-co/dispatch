@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster as sdist
+FROM python:3.9-slim-buster as sdist
 
 LABEL maintainer="oss@netflix.com"
 LABEL org.opencontainers.image.title="Dispatch PyPI Wheel"
@@ -37,7 +37,7 @@ RUN export YARN_CACHE_FOLDER="$(mktemp -d)" \
     && mv /usr/src/dispatch/dist /dist
 
 # This is the image to be run
-FROM python:3.8-buster
+FROM python:3.9-buster
 
 LABEL maintainer="oss@dispatch.io"
 LABEL org.opencontainers.image.title="Dispatch"
@@ -67,23 +67,23 @@ RUN set -x \
 
 COPY --from=sdist /dist/*.whl /tmp/dist/
 RUN set -x \
-    && buildDeps="" \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends $buildDeps \
+    && buildDeps=""
+    # && apt-get update #
+    # && apt-get install -y --no-install-recommends $buildDeps
     # remove internal index when internal plugins are seperated
-    && pip install -U /tmp/dist/*.whl \
-    && apt-get purge -y --auto-remove $buildDeps \
+RUN pip install -U /tmp/dist/*.whl
+RUN apt-get purge -y --auto-remove $buildDeps \
     # We install run-time dependencies strictly after
     # build dependencies to prevent accidental collusion.
     # These are also installed last as they are needed
     # during container run and can have the same deps w/
-    && apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     pkg-config postgresql-client-12 nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && npm install mjml
 
-RUN modules="/usr/local/lib/python3.8/site-packages/dispatch/static/dispatch/node_modules" && \
+RUN modules="/usr/local/lib/python3.9/site-packages/dispatch/static/dispatch/node_modules" && \
     cp -r ${modules}/mjml/lib/ ${modules}/lib/
 
 EXPOSE 8000

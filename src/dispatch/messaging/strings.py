@@ -376,14 +376,12 @@ INCIDENT_PRIORITY_FYI = {
 }
 
 INCIDENT_REPORTER = {
-    "title": "Reporter - {{reporter_fullname}}, {{reporter_team}}",
-    "title_link": "{{reporter_weblink}}",
+    "title": "Reporter - {{reporter_fullname}}",
     "text": INCIDENT_REPORTER_DESCRIPTION,
 }
 
 INCIDENT_COMMANDER = {
-    "title": "Commander - {{commander_fullname}}, {{commander_team}}",
-    "title_link": "{{commander_weblink}}",
+    "title": "Commander - {{commander_fullname}}",
     "text": INCIDENT_COMMANDER_DESCRIPTION,
 }
 
@@ -545,7 +543,7 @@ LEARNED_LESSONS = {
 
 LEARNED_LESSON_NOTIFICATION = [
     LEARNED_LESSON_TITLE,
-    {"title": "Lecciones:", "text": "{{lessons}}"}
+    {"title": "Lecciones:", "text": "{{lessons}}\n     _- {{user}}_"}
 ]
 
 INCIDENT_TACTICAL_REPORT = [

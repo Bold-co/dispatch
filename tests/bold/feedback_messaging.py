@@ -4,20 +4,19 @@ from dispatch.plugins.dispatch_slack.plugin import SlackConversationPlugin
 plugin = SlackConversationPlugin()
 
 """
- -
+INC-037 -
 Lecciones:
 
 """
 
-
 notification_kwargs = [
     {
-        "name": "",
+        "name": "INC-",
         "title": "",
-        "lessons": "\n"
+        "lessons": "\n",
+        "user": ""
     }
 ]
-
 
 template = LEARNED_LESSON_NOTIFICATION.copy()
 template.insert(1, INCIDENT_TITLE_ES)

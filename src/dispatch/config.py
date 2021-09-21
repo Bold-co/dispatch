@@ -266,7 +266,7 @@ REPORT_INCIDENTS = config(
 )
 
 INCIDENT_REPORT_CHANNELS = config(
-    "INCIDENT_REPORT_CHANNELS", default="Alert,Final User,Support Channel,Sales Team,Teach Team,Bold Team"
+    "INCIDENT_REPORT_CHANNELS", default="Alert,Final User,Support Channel,Sales Team,Tech Team,Bold Team"
 )
 
 INCIDENT_DEVOPS_USER = config(
