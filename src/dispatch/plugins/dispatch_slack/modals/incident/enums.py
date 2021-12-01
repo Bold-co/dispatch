@@ -12,6 +12,7 @@ class IncidentBlockId(str, Enum):
     status = "status_field"
     team = "team"
     report_source = "report_source"
+    product = "product"
 
 
 # report incident

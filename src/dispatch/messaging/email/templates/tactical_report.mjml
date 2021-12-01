@@ -33,7 +33,7 @@
   <mj-column>
     <mj-divider />
     <mj-text mj-class="section-title">
-      Conditions
+      Causes
     </mj-text>
     <mj-text>
       {{ conditions }}
@@ -55,7 +55,7 @@
   <mj-column>
     <mj-divider />
     <mj-text mj-class="section-title">
-      Needs
+      Consequences
     </mj-text>
     <mj-text>
       {{ needs }}

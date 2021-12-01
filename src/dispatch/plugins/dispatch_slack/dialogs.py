@@ -9,6 +9,9 @@ from dispatch.report.enums import ReportTypes
 from dispatch.service import service as service_service
 
 from .config import SLACK_COMMAND_UPDATE_NOTIFICATIONS_GROUP_SLUG
+from .modals.incident.fields import option_from_template, dialog_option_from_template
+
+from dispatch.incident import affected_products as products
 
 log = logging.getLogger(__name__)
 
@@ -183,22 +186,49 @@ def create_tactical_report_dialog(
         db_session=db_session, incident_id=incident_id, report_type=ReportTypes.tactical_report
     )
 
+    incident = incident_service.get(db_session=db_session, incident_id=incident_id)
+
     conditions = actions = needs = ""
     if tactical_report:
         conditions = tactical_report.details.get("conditions")
         actions = tactical_report.details.get("actions")
         needs = tactical_report.details.get("needs")
 
+    product_options = []
+    product_list = products.get_products_by_team(team=incident.team_name)
+    for product in product_list:
+        product_options.append(dialog_option_from_template(text=product, value=product))
+
+    if not incident.platform:
+        incident.platform = "AWS..."
+
     dialog = {
         "callback_id": command["command"],
         "title": "Tactical Report",
         "submit_label": "Submit",
         "elements": [
-            {"type": "textarea", "label": "Conditions", "name": "conditions", "value": conditions},
+            {
+                "type": "select",
+                "label": "Select the affected product",
+                "name": "product",
+                "options": product_options,
+                "value": incident.product,
+            },
+            {"type": "text", "label": "Affected technology platform", "name": "platform", "value": incident.platform},
+            {"type": "textarea", "label": "Causes", "name": "conditions", "value": conditions},
             {"type": "textarea", "label": "Actions", "name": "actions", "value": actions},
-            {"type": "textarea", "label": "Needs", "name": "needs", "value": needs},
+            {"type": "textarea", "label": "Consequences", "name": "needs", "value": needs},
         ],
     }
+
+    if incident.product and incident.product in product_list:
+        dialog["elements"][0].update(
+            {
+                "selected_options": [
+                    dialog_option_from_template(text=incident.product, value=incident.product)
+                ]
+            }
+        )
 
     dispatch_slack_service.open_dialog_with_user(slack_client, command["trigger_id"], dialog)
 

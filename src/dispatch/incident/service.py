@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 import requests
-from cachetools.func import lru_cache
 from requests.auth import HTTPBasicAuth
 
 from dispatch.database.core import SessionLocal
@@ -21,7 +20,7 @@ from dispatch.term import service as term_service
 from dispatch.term.models import TermUpdate
 from .enums import IncidentStatus
 from .models import Incident, IncidentUpdate
-from ..config import INCIDENT_DEVOPS_ENDPOINT, FILTER_FUNCTIONAL_TEAMS, INCIDENT_DEVOPS_USER, INCIDENT_DEVOPS_PASSWORD
+from ..config import INCIDENT_DEVOPS_ENDPOINT, INCIDENT_DEVOPS_USER, INCIDENT_DEVOPS_PASSWORD
 
 log = logging.getLogger(__name__)
 
@@ -176,6 +175,7 @@ def create(
     report_source: str = None,
     project: str = None,
     visibility: str = None,
+    product: str = None,
 ) -> Incident:
     """Creates a new incident."""
     if not project:
@@ -233,6 +233,7 @@ def create(
         team_id=team_id,
         team_name=team_name,
         project=project,
+        product=product,
     )
     db_session.add(incident)
     db_session.commit()
@@ -307,8 +308,6 @@ def update(*, db_session, incident: Incident, incident_in: IncidentUpdate) -> In
             "tags",
             "terms",
             "visibility",
-            "report_source",
-            "team",
             "project",
         },
     )
@@ -349,7 +348,7 @@ def send_created_incident_quality_event(incident: Incident):
             "reporter_email": incident.reporter.individual.email,
             "report_source": incident.report_source,
             "creation_time": incident.created_at.strftime('%Y-%m-%dT%H:%M:%S%Z'),
-            "team_id": incident.team_id
+            "team_name": incident.team_name
         }
         response = requests.post(url=events_url, json=data, auth=devops_basic_auth())
         if not response.ok:
@@ -389,36 +388,6 @@ def send_closed_incident_quality_event(incident: Incident):
         log.error(f"Error posting to bold API")
 
 
-@lru_cache(maxsize=32)
-def get_teams():
-    try:
-        teams_url = f"{INCIDENT_DEVOPS_ENDPOINT}/teams/azure-devops"
-        response = requests.get(url=teams_url, auth=devops_basic_auth())
-
-        if not response.ok:
-            log.error(f"Error posting to bold API: {response.text}")
-            return get_default_teams()
-
-        teams = response.json()["teams"]
-
-        if FILTER_FUNCTIONAL_TEAMS:
-            teams = filter(lambda x: x.get("is_functional"), teams)
-
-        return sorted(teams, key=lambda x: x.get("name"), reverse=False)
-    except Exception:
-        log.error(f"Error posting to bold API")
-    return get_default_teams()
-
-
 def devops_basic_auth():
     return HTTPBasicAuth(username=INCIDENT_DEVOPS_USER, password=INCIDENT_DEVOPS_PASSWORD)
 
-
-def get_default_teams():
-    return [
-        {'id': '8ae1631c-3b5e-4cd1-9ece-c10f8a3f560d', 'name': 'Accounting', 'is_functional': True},
-        {'id': '1e1201e3-13a7-4011-bf79-e4279000800a', 'name': 'Data and Automation', 'is_functional': True},
-        {'id': 'bd7f9b31-8bb4-4ea4-886d-02f41ee7adc3', 'name': 'Growth', 'is_functional': True},
-        {'id': 'a95723a0-bf65-492d-b71b-73b4f877c2bf', 'name': 'Merchants Tools', 'is_functional': True},
-        {'id': '7f336a05-74da-467f-b77e-973279492033', 'name': 'Payments', 'is_functional': True},
-        {'id': '085aa84b-a6c9-46a1-90fd-5dd6379ee8cd', 'name': 'Sales n Ops', 'is_functional': True}]

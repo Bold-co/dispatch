@@ -34,3 +34,6 @@ class DocumentPlugin(Plugin):
     def update_review_sheet(self, key, **kwargs):
         raise NotImplementedError
 
+    def update_risk_sheet(self, key, **kwargs):
+        raise NotImplementedError
+

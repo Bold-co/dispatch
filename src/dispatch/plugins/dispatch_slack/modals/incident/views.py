@@ -1,12 +1,11 @@
 import json
 
 from dispatch.database.core import SessionLocal
-from dispatch.incident.models import Incident
 from dispatch.incident import service as incident_service
+from dispatch.incident.models import Incident
 from dispatch.participant.models import Participant
-from dispatch.project import service as project_service
 from dispatch.plugin import service as plugin_service
-
+from dispatch.project import service as project_service
 from .enums import (
     ReportIncidentCallbackId,
     UpdateIncidentCallbackId,
@@ -21,12 +20,11 @@ from .fields import (
     option_from_template,
     title_input_block,
     description_input_block,
-    project_select_block,
     participants_select_block,
     status_select_block,
     incident_priority_select_block,
     incident_type_select_block,
-    tag_multi_select_block, team_select_block, report_source_select_block,
+    team_select_block, report_source_select_block, product_select_block,
 )
 
 
@@ -49,6 +47,7 @@ def update_incident(db_session: SessionLocal, channel_id: str, incident_id: int 
             },
             title_input_block(initial_value=incident.title),
             description_input_block(initial_value=incident.description),
+            team_select_block(initial_option_team=incident.team_name),
             status_select_block(initial_option=incident.status),
             incident_type_select_block(
                 db_session=db_session,

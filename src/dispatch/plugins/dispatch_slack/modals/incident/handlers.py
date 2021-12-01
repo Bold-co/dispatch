@@ -185,6 +185,8 @@ def update_incident_from_submitted_form(
         incident_type={"name": parsed_form_data[IncidentBlockId.type]["value"]},
         incident_priority={"name": parsed_form_data[IncidentBlockId.priority]["value"]},
         status=parsed_form_data[IncidentBlockId.status]["value"],
+        team_id=parsed_form_data[IncidentBlockId.team]["value"],
+        team_name=parsed_form_data[IncidentBlockId.team]["name"],
         tags=tags,
     )
 

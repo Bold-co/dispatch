@@ -6,7 +6,7 @@
 """
 import logging
 
-from dispatch.config import DISPATCH_UI_URL, DISPATCH_HELP_SLACK_CHANNEL
+from dispatch.config import DISPATCH_UI_URL, DISPATCH_HELP_SLACK_CHANNEL, DISPATCH_SECURITY_SLACK_CHANNEL
 from dispatch.conversation.enums import ConversationCommands
 from dispatch.database.core import SessionLocal, resolve_attr
 from dispatch.document import service as document_service
@@ -296,8 +296,12 @@ def send_incident_created_notifications(incident: Incident, db_session: SessionL
         notification_kwargs.update({"conversation": f"#{incident.conversation.resource_id}"})
         notification_kwargs.update({"conversation_weblink": incident.conversation.weblink})
 
+        channel = DISPATCH_HELP_SLACK_CHANNEL \
+            if incident.incident_type.name != "Security" \
+            else DISPATCH_SECURITY_SLACK_CHANNEL
+
         plugin.instance.send(
-            DISPATCH_HELP_SLACK_CHANNEL,
+            channel,
             "Incident Notification",
             INCIDENT_CREATED_NOTIFICATION,
             notification_type=MessageType.incident_notification,

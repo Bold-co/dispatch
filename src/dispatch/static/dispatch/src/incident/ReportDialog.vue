@@ -17,7 +17,7 @@
                 status reports.
                 <v-textarea
                   v-model="conditions"
-                  label="Conditions"
+                  label="Causes"
                   hint="The current state of the incident."
                   clearable
                   auto-grow
@@ -31,7 +31,7 @@
                 />
                 <v-textarea
                   v-model="needs"
-                  label="Needs"
+                  label="Consequences"
                   hint="Any outstanding asks that you are waiting on."
                   clearable
                   auto-grow

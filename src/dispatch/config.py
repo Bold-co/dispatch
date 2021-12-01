@@ -92,6 +92,7 @@ TIME_ZONE = config("TIME_ZONE", default="America/Bogota")
 DISPATCH_UI_URL = config("DISPATCH_UI_URL", default="http://localhost:8000")
 DISPATCH_HELP_EMAIL = config("DISPATCH_HELP_EMAIL", default="help@example.com")
 DISPATCH_HELP_SLACK_CHANNEL = config("DISPATCH_HELP_SLACK_CHANNEL", default="#dispatch-test")
+DISPATCH_SECURITY_SLACK_CHANNEL = config("DISPATCH_SECURITY_SLACK_CHANNEL", default="#dispatch-test")
 DISPATCH_LESSONS_SLACK_CHANNEL = config("DISPATCH_LESSONS_SLACK_CHANNEL", default="#dispatch-test")
 
 DISPATCH_CHECK_PERMISSIONS = config("DISPATCH_CHECK_PERMISSIONS", default=False)
@@ -222,6 +223,9 @@ INCIDENT_RESOURCE_INCIDENT_REVIEW_DOCUMENT = config(
 INCIDENT_TRACKING_SHEET = config(
     "INCIDENT_TRACKING_SHEET", default="dispatch-incident-tracking-sheet"
 )
+INCIDENT_RISK_SHEET = config(
+    "INCIDENT_RISK_SHEET", default="dispatch-incident-risk-sheet"
+)
 INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT = config(
     "INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT", default="dispatch-executive-report-document"
 )
@@ -247,6 +251,9 @@ INCIDENT_PREFIX = config(
 # Tracking
 INCIDENT_TRACKING_SHEET_RANGE = config(
     "INCIDENT_TRACKING_SHEET_RANGE", default="Incidents!A1:A1"
+)
+RISK_TRACKING_SHEET_RANGE = config(
+    "INCIDENT_TRACKING_SHEET_RANGE", default="Sheet1!A1:A1"
 )
 
 INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE = config(

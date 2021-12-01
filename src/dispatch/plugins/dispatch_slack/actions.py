@@ -52,6 +52,7 @@ from .service import get_user_email, send_message, get_user_info_by_id
 from ...feedback.enums import FeedbackRating
 from ...feedback.messaging import send_learned_lesson_notification
 from ...feedback.models import FeedbackCreate
+from ...incident.models import IncidentUpdate, IncidentRead
 from ...messaging.strings import INCIDENT_TASK_NEW_NOTIFICATION
 from ...task.flows import send_task_notification
 
@@ -316,7 +317,28 @@ def handle_tactical_report_create(
         actions=action["submission"]["actions"],
         needs=action["submission"]["needs"],
     )
+
     incident = incident_service.get(db_session=db_session, incident_id=incident_id)
+
+    incident_in = IncidentUpdate(
+        title=incident.title,
+        description=incident.description,
+        incident_type=incident.incident_type,
+        incident_priority=incident.incident_priority,
+        status=incident.status,
+        team_id=incident.team_id,
+        team_name=incident.team_name,
+        tags=incident.tags,
+        platform=action["submission"]["platform"],
+        product=action["submission"]["product"],
+    )
+
+    # we don't allow visibility to be set in slack so we copy it over
+    incident_in.visibility = incident.visibility
+    incident_service.update(
+        db_session=db_session, incident=incident, incident_in=incident_in
+    )
+
     report_flows.create_tactical_report(
         user_email=user_email,
         incident_id=incident_id,

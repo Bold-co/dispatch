@@ -64,7 +64,7 @@ from .messaging import (
     send_incident_welcome_participant_messages,
 )
 from .models import Incident, IncidentStatus
-from .service import send_created_incident_quality_event, send_stabilized_incident_quality_event, \
+from .service import send_stabilized_incident_quality_event, \
     send_closed_incident_quality_event
 from ..common.utils.date import date_to_tz
 
@@ -653,9 +653,6 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
 
     db_session.add(incident)
     db_session.commit()
-
-    if REPORT_INCIDENTS:
-        send_created_incident_quality_event(incident)
 
 
 def incident_active_status_flow(incident: Incident, db_session=None):

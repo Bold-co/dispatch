@@ -220,7 +220,7 @@ The incident has been resolved and marked as closed.""".replace(
 ).strip()
 
 INCIDENT_TACTICAL_REPORT_DESCRIPTION = """
-The following conditions, actions, and needs summarize the current status of the incident.""".replace(
+The following causes, actions, and consequences summarize the current status of the incident.""".replace(
     "\n", " "
 ).strip()
 
@@ -548,9 +548,9 @@ LEARNED_LESSON_NOTIFICATION = [
 
 INCIDENT_TACTICAL_REPORT = [
     {"title": "Incident Tactical Report", "text": INCIDENT_TACTICAL_REPORT_DESCRIPTION},
-    {"title": "Conditions", "text": "{{conditions}}"},
+    {"title": "Causes", "text": "{{conditions}}"},
     {"title": "Actions", "text": "{{actions}}"},
-    {"title": "Needs", "text": "{{needs}}"},
+    {"title": "Consequences", "text": "{{needs}}"},
 ]
 
 INCIDENT_EXECUTIVE_REPORT = [

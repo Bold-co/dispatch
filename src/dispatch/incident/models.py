@@ -77,6 +77,8 @@ class Incident(Base, TimeStampMixin, ProjectMixin):
     report_source = Column(String)
     team_id = Column(String)
     team_name = Column(String)
+    product = Column(String)
+    platform = Column(String)
 
     # auto generated
     reported_at = Column(DateTime, default=datetime.utcnow)
@@ -280,6 +282,8 @@ class IncidentReadNested(IncidentBase):
     report_source: Optional[str] = None
     team_id: Optional[str] = None
     team_name: Optional[str] = None
+    product: Optional[str] = None
+    platform: Optional[str] = None
     reporter: Optional[ParticipantRead]
     commander: Optional[ParticipantRead]
     incident_priority: IncidentPriorityRead
@@ -294,6 +298,8 @@ class IncidentCreate(IncidentBase):
     report_source: Optional[str] = None
     team_id: Optional[str] = None
     team_name: Optional[str] = None
+    product: Optional[str] = None
+    platform: Optional[str] = None
     incident_priority: Optional[IncidentPriorityCreate]
     incident_type: Optional[IncidentTypeCreate]
     tags: Optional[List[Any]] = []  # any until we figure out circular imports
@@ -304,6 +310,8 @@ class IncidentUpdate(IncidentBase):
     report_source: Optional[str] = None
     team_id: Optional[str] = None
     team_name: Optional[str] = None
+    product: Optional[str] = None
+    platform: Optional[str] = None
     incident_priority: IncidentPriorityBase
     incident_type: IncidentTypeBase
     reported_at: Optional[datetime] = None
@@ -322,6 +330,8 @@ class IncidentRead(IncidentBase):
     report_source: Optional[str] = None
     team_id: Optional[str] = None
     team_name: Optional[str] = None
+    product: Optional[str] = None
+    platform: Optional[str] = None
     primary_team: Any
     primary_location: Any
     reporter: Optional[ParticipantRead]

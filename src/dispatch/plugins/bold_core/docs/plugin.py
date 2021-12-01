@@ -5,13 +5,15 @@
     :license: Apache, see LICENSE for more details.
 .. moduleauthor:: Kevin Glisson <kglisson@netflix.com>
 """
+import datetime
 import logging
 
-from dispatch.incident.models import Incident
-
 from dispatch.common.utils.date import date_diff, date_to_tz
-from dispatch.config import INCIDENT_TRACKING_SHEET_RANGE, INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE
+from dispatch.config import INCIDENT_TRACKING_SHEET_RANGE, INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE, \
+    RISK_TRACKING_SHEET_RANGE
 from dispatch.decorators import apply, counter, timer
+from dispatch.incident.affected_products import describe_products, get_area_info
+from dispatch.incident.models import Incident
 from dispatch.plugins.bases import DocumentPlugin
 from dispatch.plugins.bold_core.docs.service import create_coda_review, replace_text, add_row, split_values
 from dispatch.plugins.dispatch_google import docs as google_docs_plugin
@@ -67,6 +69,10 @@ class BoldDocumentPlugin(DocumentPlugin):
             started_at = date_to_tz(events[0].started_at)
             report_source = incident.report_source
             team = incident.team_name
+            product = incident.product
+            platform = incident.platform
+
+            owner, area, process, business_line = describe_products(team=team, product=product)
 
             mttd = date_diff(start_date=events[0].started_at, end_date=incident.reported_at)
             mttr = date_diff(start_date=events[0].started_at, end_date=incident.stable_at)
@@ -74,7 +80,8 @@ class BoldDocumentPlugin(DocumentPlugin):
             add_row(client=client, document_id=document_id,
                     params=[[name], [title], [priority], [started_at],
                             [reported_at], [stable_at], [type], [description],
-                            [mttd], [mttr], [report_source], [team]],
+                            [mttd], [mttr], [report_source],
+                            [team], [owner], [area], [process], [business_line], [platform]],
                     range=INCIDENT_TRACKING_SHEET_RANGE)
         except Exception as e:
             log.exception(e)
@@ -85,5 +92,57 @@ class BoldDocumentPlugin(DocumentPlugin):
                 add_row(client=client, document_id=document_id,
                         params=[[lesson.feedback], [name], [title]],
                         range=INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE)
+        except Exception as e:
+            log.exception(e)
+
+    def update_risk_sheet(self, document_id: str, **kwargs):
+        """Creates a row in the risk sheet."""
+        client = get_service("sheets", "v4", self.scopes).spreadsheets()
+
+        incident: Incident = kwargs.get("incident")
+        name = incident.name
+        title = incident.title
+        try:
+            current_time = date_to_tz(datetime.datetime.utcnow())
+            priority = incident.incident_priority.name
+            description = incident.description
+            reported_at = date_to_tz(incident.reported_at)
+            stable_at = date_to_tz(incident.stable_at) if incident.stable_at else None
+            events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
+            started_at = date_to_tz(events[0].started_at) if events and events[0] else None
+            closed = "Sí" if incident.status != "Active" else "No"
+            team = incident.team_name
+            product = incident.product
+            platform = incident.platform
+            reporter = incident.reporter.individual.email
+
+            owner, area, process, business_line = describe_products(team=team, product=product)
+
+            tr_size = len(incident.tactical_reports)
+            tc_size = len(incident.executive_reports)
+            causes = ""
+            consequences = ""
+            next_steps = ""
+            if tr_size > 0:
+                causes = incident.tactical_reports[tr_size - 1].details.get("conditions")
+                consequences = incident.tactical_reports[tr_size - 1].details.get("needs")
+            if tc_size > 0:
+                next_steps = incident.executive_reports[tc_size - 1].details.get("next_steps")
+                overview = incident.executive_reports[tc_size - 1].details.get("overview")
+                consequences = consequences + "\n" + overview
+
+            area_info = get_area_info()
+            area = str(area_info.get("area", ""))
+            area_owner = str(area_info.get("owner", ""))
+
+            add_row(client=client, document_id=document_id,
+                    params=[[current_time], [started_at], [closed], [reported_at],
+                            [platform], [business_line], [process], [], [description],
+                            [causes], [consequences], [owner], [area],
+                            [area_owner],
+                            [area], [stable_at], [reporter], [0], [], [name],
+                            [], [], [], [], [], [], [], [], [], [], [],
+                            [priority], [], [], [], [next_steps], [area_owner]],
+                    range=RISK_TRACKING_SHEET_RANGE)
         except Exception as e:
             log.exception(e)

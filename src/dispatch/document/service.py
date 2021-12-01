@@ -8,7 +8,7 @@ from dispatch.config import (
     INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT_TEMPLATE,
     INCIDENT_RESOURCE_INCIDENT_REVIEW_DOCUMENT_TEMPLATE,
     INCIDENT_RESOURCE_INVESTIGATION_SHEET_TEMPLATE,
-    INCIDENT_RESOURCE_INCIDENT_FAQ_DOCUMENT, INCIDENT_TRACKING_SHEET,
+    INCIDENT_RESOURCE_INCIDENT_FAQ_DOCUMENT, INCIDENT_TRACKING_SHEET, INCIDENT_RISK_SHEET,
 )
 from dispatch.project import service as project_service
 from dispatch.search_filter import service as search_filter_service
@@ -83,6 +83,15 @@ def get_incident_tracking_sheet(*, db_session):
     return (
         db_session.query(Document).filter(
             Document.resource_type == INCIDENT_TRACKING_SHEET
+        )
+    ).one_or_none()
+
+
+def get_incident_risk_sheet(*, db_session):
+    """Fetches incident tracking sheet."""
+    return (
+        db_session.query(Document).filter(
+            Document.resource_type == INCIDENT_RISK_SHEET
         )
     ).one_or_none()
 

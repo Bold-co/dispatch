@@ -1,10 +1,8 @@
 import logging
-from asyncio import sleep
 
 import requests
 
 from dispatch.config import INCIDENT_DEVOPS_ENDPOINT
-from dispatch.incident.service import get_teams
 
 log = logging.getLogger(__name__)
 

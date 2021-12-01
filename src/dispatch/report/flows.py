@@ -2,7 +2,7 @@ import logging
 
 from datetime import date
 
-from dispatch.config import INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT
+from dispatch.config import INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT, REPORT_INCIDENTS
 from dispatch.decorators import background_task
 from dispatch.document import service as document_service
 from dispatch.document.models import DocumentCreate
@@ -20,7 +20,7 @@ from .messaging import (
 )
 from .models import ReportCreate, TacticalReportCreate, ExecutiveReportCreate
 from .service import create, get_all_by_incident_id_and_type
-
+from ..incident.service import send_created_incident_quality_event
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +36,15 @@ def create_tactical_report(
 
     # we load the incident instance
     incident = incident_service.get(db_session=db_session, incident_id=incident_id)
+
+    # find previous
+    tactical_exists = False
+    tactical_reports = get_all_by_incident_id_and_type(
+        db_session=db_session, incident_id=incident_id, report_type=ReportTypes.tactical_report
+    )
+
+    if tactical_reports:
+        tactical_exists = True
 
     # we create a new tactical report
     details = {"conditions": conditions, "actions": actions, "needs": needs}
@@ -59,7 +68,7 @@ def create_tactical_report(
         db_session=db_session,
         source="Incident Participant",
         description=f"{participant.individual.name} created a new tactical report",
-        details={"conditions": conditions, "actions": actions, "needs": needs},
+        details={"Causes": conditions, "actions": actions, "Consequences": needs},
         incident_id=incident_id,
         individual_id=participant.individual.id,
     )
@@ -69,6 +78,10 @@ def create_tactical_report(
 
     # we send the tactical report to the tactical group
     send_tactical_report_to_tactical_group(incident_id, tactical_report, db_session)
+
+    # Only if not previous tactical report exists
+    if REPORT_INCIDENTS and not tactical_exists:
+        send_created_incident_quality_event(incident)
 
     return tactical_report
 
@@ -196,5 +209,15 @@ def create_executive_report(
     # we send the executive report to the notifications group
     send_executive_report_to_conversation(incident.id, executive_report, db_session)
     send_executive_report_to_notifications_group(incident.id, executive_report, db_session)
+
+    # Only if not previous executive report exists
+    if REPORT_INCIDENTS and (not previous_executive_reports or len(previous_executive_reports) == 0):
+        tracking = document_service.get_incident_risk_sheet(db_session=db_session)
+        if tracking:
+            document_plugin.instance.update_risk_sheet(
+                tracking.resource_id,
+                incident=incident,
+                db_session=db_session
+            )
 
     return executive_report

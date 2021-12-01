@@ -1,20 +1,20 @@
 import logging
+from operator import itemgetter
 from typing import List
+
 from sqlalchemy.orm import Session
 
 from dispatch.config import INCIDENT_REPORT_CHANNELS
+from dispatch.incident import affected_products as products
 from dispatch.incident.enums import IncidentStatus
-
 from dispatch.incident.models import Incident
-from dispatch.incident import service as incident_service
 from dispatch.incident_priority import service as incident_priority_service
 from dispatch.incident_priority.models import IncidentPriority
 from dispatch.incident_type import service as incident_type_service
 from dispatch.incident_type.models import IncidentType
 from dispatch.participant.models import Participant
-from dispatch.tag.models import Tag
 from dispatch.project import service as project_service
-
+from dispatch.tag.models import Tag
 from .enums import (
     IncidentBlockId,
     ReportIncidentCallbackId,
@@ -22,13 +22,17 @@ from .enums import (
     UpdateParticipantCallbackId,
 )
 
-
 log = logging.getLogger(__name__)
 
 
 def option_from_template(text: str, value: str):
     """Helper function which generates the option block for modals / views"""
     return {"text": {"type": "plain_text", "text": str(text), "emoji": True}, "value": str(value)}
+
+
+def dialog_option_from_template(text: str, value: str):
+    """Helper function which generates the option block for dialogs"""
+    return {"label": str(text), "value": str(value)}
 
 
 def status_select_block(initial_option: str = None):
@@ -63,6 +67,9 @@ def incident_type_select_block(
         incident_type_options.append(
             option_from_template(text=incident_type.name, value=incident_type.name)
         )
+
+        incident_type_options = sorted(incident_type_options, key=itemgetter('value'))
+
     block = {
         "block_id": IncidentBlockId.type,
         "type": "input",
@@ -154,11 +161,12 @@ def project_select_block(db_session: Session, initial_option: dict = None):
     return block
 
 
-def team_select_block():
+def team_select_block(initial_option_team: str = None):
     """Builds the incident team select block."""
     team_options = []
-    for team in incident_service.get_teams():
-        team_options.append(option_from_template(text=team["name"], value=team["id"]))
+    teams = products.get_teams()
+    for team in teams:
+        team_options.append(option_from_template(text=team, value=team))
 
     block = {
         "block_id": IncidentBlockId.team,
@@ -173,6 +181,49 @@ def team_select_block():
             "options": team_options
         },
     }
+
+    if initial_option_team and initial_option_team in teams:
+        block["element"].update(
+            {
+                "initial_option": option_from_template(
+                    text=initial_option_team, value=initial_option_team
+                )
+            }
+        )
+
+    return block
+
+
+def product_select_block(team: str, initial_option_product: str = None):
+    """Builds the incident team select block."""
+    product_options = []
+
+    for product in products.get_products(team=team):
+        product_options.append(option_from_template(text=product, value=product))
+
+    block = {
+        "block_id": IncidentBlockId.product,
+        "type": "input",
+        "label": {
+            "text": "Product",
+            "type": "plain_text",
+        },
+        "element": {
+            "type": "static_select",
+            "placeholder": {"type": "plain_text", "text": "Select the affected product"},
+            "options": product_options
+        },
+    }
+
+    if initial_option_product:
+        block["element"].update(
+            {
+                "initial_option": option_from_template(
+                    text=initial_option_product, value=initial_option_product
+                )
+            }
+        )
+
     return block
 
 
