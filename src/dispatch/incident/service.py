@@ -176,6 +176,7 @@ def create(
     project: str = None,
     visibility: str = None,
     product: str = None,
+    platform: str = None,
 ) -> Incident:
     """Creates a new incident."""
     if not project:
@@ -234,6 +235,7 @@ def create(
         team_name=team_name,
         project=project,
         product=product,
+        platform=platform,
     )
     db_session.add(incident)
     db_session.commit()
