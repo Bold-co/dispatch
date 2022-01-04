@@ -101,7 +101,7 @@ class BoldDocumentPlugin(DocumentPlugin):
 
         incident: Incident = kwargs.get("incident")
         name = incident.name
-        title = incident.title
+
         try:
             current_time = date_to_tz(datetime.datetime.utcnow())
             priority = incident.incident_priority.name
@@ -124,25 +124,27 @@ class BoldDocumentPlugin(DocumentPlugin):
             consequences = ""
             next_steps = ""
             if tr_size > 0:
-                causes = incident.tactical_reports[tr_size - 1].details.get("conditions")
-                consequences = incident.tactical_reports[tr_size - 1].details.get("needs")
+                reports = sorted(incident.tactical_reports, key=lambda report: report.created_at, reverse=True)
+                causes = reports[0].details.get("conditions")
+                consequences = reports[0].details.get("needs")
             if tc_size > 0:
-                next_steps = incident.executive_reports[tc_size - 1].details.get("next_steps")
-                overview = incident.executive_reports[tc_size - 1].details.get("overview")
-                consequences = consequences + "\n" + overview
+                reports = sorted(incident.executive_reports, key=lambda report: report.created_at, reverse=True)
+                next_steps = reports[0].details.get("next_steps")
+                overview = reports[0].details.get("overview")
+                consequences = priority + "\n" + consequences + "\n" + overview
 
             area_info = get_area_info()
             area = str(area_info.get("area", ""))
-            area_owner = str(area_info.get("owner", ""))
+            codification = "EV-TI-"
 
             add_row(client=client, document_id=document_id,
-                    params=[[current_time], [started_at], [closed], [reported_at],
-                            [platform], [business_line], [process], [], [description],
-                            [causes], [consequences], [owner], [area],
-                            [area_owner],
-                            [area], [stable_at], [reporter], [0], [], [name],
-                            [], [], [], [], [], [], [], [], [], [], [],
-                            [priority], [], [], [], [next_steps], [area_owner]],
+                    params=[
+                        [current_time], [started_at], [reported_at], [closed],
+                        [description], [causes], [consequences], [platform],
+                        [process], [area], [business_line], [stable_at],
+                        [reporter], [], [], [codification],
+                        [name], [], [], [], [], [], [], [], [], [], [],
+                        [], [], [], [], [], [], [], [], [], [], [], [next_steps]],
                     range=RISK_TRACKING_SHEET_RANGE)
         except Exception as e:
             log.exception(e)
