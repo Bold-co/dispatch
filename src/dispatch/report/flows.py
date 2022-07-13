@@ -43,7 +43,11 @@ def create_tactical_report(
         db_session=db_session, incident_id=incident_id, report_type=ReportTypes.tactical_report
     )
 
-    if tactical_reports:
+    previous_tactical_reports = []
+    for tactical_report in tactical_reports:
+        previous_tactical_reports.append(tactical_report)
+
+    if len(previous_tactical_reports) > 0:
         tactical_exists = True
 
     # we create a new tactical report

@@ -2,16 +2,23 @@ import logging
 
 import requests
 
-from dispatch.config import INCIDENT_DEVOPS_ENDPOINT
+# from dispatch.config import INCIDENT_DEVOPS_ENDPOINT
 
 log = logging.getLogger(__name__)
+
+INCIDENT_DEVOPS_ENDPOINT = "https://xsjda0wprf.execute-api.us-east-1.amazonaws.com/dev"
 
 
 def send_created_incident_quality_event(name: str,
                                         reporter_email: str,
                                         report_source: str,
                                         creation_time: str,
-                                        team_id: str):
+                                        team_name: str,
+                                        type: str,
+                                        priority: str,
+                                        product: str,
+                                        platform: str,
+                                        ):
     try:
         events_url = f"{INCIDENT_DEVOPS_ENDPOINT}/incidents/dispatch"
         data = {
@@ -19,7 +26,11 @@ def send_created_incident_quality_event(name: str,
             "reporter_email": reporter_email,
             "report_source": report_source,
             "creation_time": creation_time,  # strftime('%Y-%m-%dT%H:%M:%S%Z'),
-            "team_id": team_id
+            "team_name": team_name,
+            "type": type,
+            "priority": priority,
+            "product": product,
+            "platform": platform,
         }
         response = requests.post(url=events_url, json=data)
         if not response.ok:
@@ -59,10 +70,12 @@ def send_closed_incident_quality_event(name: str, close_time: str, outage_start_
 
 incidents = [
 
-    {'name': 'INC-027', 'reporter_email': 'nataly.martinez@bold.co', 'report_source': 'Alert',
+    {'name': 'INC-022', 'reporter_email': 'nataly.martinez@bold.co', 'report_source': 'Alert',
      'creation_time': '2021-07-15T22:14:27', 'stabilization_time': '2021-07-15T22:50:38',
      'close_time': None, 'outage_start_time': '2021-07-15T22:10:00',
-     'team_id': '8ae1631c-3b5e-4cd1-9ece-c10f8a3f560d'},
+     'team_name': '8ae1631c-3b5e-4cd1-9ece-c10f8a3f560d',
+     'type': 'backend', 'priority': 'LOW',
+     'product': 'PaymentLink', 'platform': 'AWS'},
 
     {'name': 'INC-026', 'reporter_email': 'julian.hernandez@bold.co', 'report_source': 'Alerts',
      'creation_time': '2021-07-14T18:21:02', 'stabilization_time': '2021-07-15T16:06:30',
@@ -154,6 +167,24 @@ incidents = [
      'close_time': '2021-05-20T20:32:38', 'outage_start_time': '2021-04-15T13:45:00',
      'team_id': 'bd7f9b31-8bb4-4ea4-886d-02f41ee7adc3'}
 ]
+
+incident = incidents[0]
+send_created_incident_quality_event(name=incident.get("name"),
+                                    reporter_email=incident.get("reporter_email"),
+                                    report_source=incident.get("report_source"),
+                                    team_name=incident.get("team_name"),
+                                    creation_time=incident.get("creation_time"),
+                                    type=incident.get("type"),
+                                    priority=incident.get("priority"),
+                                    product=incident.get("product"),
+                                    platform=incident.get("platform"),
+                                    )
+send_stabilized_incident_quality_event(name=incident.get("name"),
+                                       stabilization_time=incident.get("stabilization_time"))
+
+send_closed_incident_quality_event(name=incident.get("name"),
+                                   close_time=incident.get("close_time"),
+                                   outage_start_time=incident.get("outage_start_time"))
 
 # for incident in incidents:
 # send_created_incident_quality_event(name=incident.get("name"),

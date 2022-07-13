@@ -81,9 +81,9 @@ def get_by_name(*, db_session, project_id: int, incident_name: str) -> Optional[
     """Returns an incident based on the given name."""
     return (
         db_session.query(Incident)
-            .filter(Incident.name == incident_name)
-            .filter(Incident.project_id == project_id)
-            .first()
+        .filter(Incident.name == incident_name)
+        .filter(Incident.project_id == project_id)
+        .first()
     )
 
 
@@ -98,11 +98,11 @@ def get_all_by_status(
     """Returns all incidents based on the given status."""
     return (
         db_session.query(Incident)
-            .filter(Incident.status == status)
-            .filter(Incident.project_id == project_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
+        .filter(Incident.status == status)
+        .filter(Incident.project_id == project_id)
+        .offset(skip)
+        .limit(limit)
+        .all()
     )
 
 
@@ -115,34 +115,34 @@ def get_all_last_x_hours_by_status(
     if status == IncidentStatus.active.value:
         return (
             db_session.query(Incident)
-                .filter(Incident.status == IncidentStatus.active.value)
-                .filter(Incident.created_at >= now - timedelta(hours=hours))
-                .filter(Incident.project_id == project_id)
-                .offset(skip)
-                .limit(limit)
-                .all()
+            .filter(Incident.status == IncidentStatus.active.value)
+            .filter(Incident.created_at >= now - timedelta(hours=hours))
+            .filter(Incident.project_id == project_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
         )
 
     if status == IncidentStatus.stable.value:
         return (
             db_session.query(Incident)
-                .filter(Incident.status == IncidentStatus.stable.value)
-                .filter(Incident.stable_at >= now - timedelta(hours=hours))
-                .filter(Incident.project_id == project_id)
-                .offset(skip)
-                .limit(limit)
-                .all()
+            .filter(Incident.status == IncidentStatus.stable.value)
+            .filter(Incident.stable_at >= now - timedelta(hours=hours))
+            .filter(Incident.project_id == project_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
         )
 
     if status == IncidentStatus.closed.value:
         return (
             db_session.query(Incident)
-                .filter(Incident.status == IncidentStatus.closed.value)
-                .filter(Incident.closed_at >= now - timedelta(hours=hours))
-                .filter(Incident.project_id == project_id)
-                .offset(skip)
-                .limit(limit)
-                .all()
+            .filter(Incident.status == IncidentStatus.closed.value)
+            .filter(Incident.closed_at >= now - timedelta(hours=hours))
+            .filter(Incident.project_id == project_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
         )
 
 
@@ -152,11 +152,11 @@ def get_all_by_incident_type(
     """Returns all incidents with the given incident type."""
     return (
         db_session.query(Incident)
-            .filter(Incident.incident_type.name == incident_type)
-            .filter(Incident.project_id == project_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
+        .filter(Incident.incident_type.name == incident_type)
+        .filter(Incident.project_id == project_id)
+        .offset(skip)
+        .limit(limit)
+        .all()
     )
 
 
@@ -350,7 +350,11 @@ def send_created_incident_quality_event(incident: Incident):
             "reporter_email": incident.reporter.individual.email,
             "report_source": incident.report_source,
             "creation_time": incident.created_at.strftime('%Y-%m-%dT%H:%M:%S%Z'),
-            "team_name": incident.team_name
+            "team_name": incident.team_name,
+            "type": incident.incident_type.name,
+            "priority": incident.incident_priority.name,
+            "product": incident.product,
+            "platform": incident.platform,
         }
         response = requests.post(url=events_url, json=data, auth=devops_basic_auth())
         if not response.ok:
@@ -392,4 +396,3 @@ def send_closed_incident_quality_event(incident: Incident):
 
 def devops_basic_auth():
     return HTTPBasicAuth(username=INCIDENT_DEVOPS_USER, password=INCIDENT_DEVOPS_PASSWORD)
-

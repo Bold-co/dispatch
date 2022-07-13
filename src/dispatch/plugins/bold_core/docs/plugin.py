@@ -135,16 +135,14 @@ class BoldDocumentPlugin(DocumentPlugin):
 
             area_info = get_area_info()
             area = str(area_info.get("area", ""))
-            codification = "EV-TI-"
 
             add_row(client=client, document_id=document_id,
                     params=[
                         [current_time], [started_at], [reported_at], [closed],
                         [description], [causes], [consequences], [platform],
                         [process], [area], [business_line], [stable_at],
-                        [reporter], [], [], [codification],
-                        [name], [], [], [], [], [], [], [], [], [], [],
-                        [], [], [], [], [], [], [], [], [], [], [], [next_steps]],
+                        [reporter], [], [],
+                        [name], [next_steps]],
                     range=RISK_TRACKING_SHEET_RANGE)
         except Exception as e:
             log.exception(e)
