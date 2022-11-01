@@ -244,6 +244,17 @@ def create_executive_report_dialog(
     slack_client=None,
 ):
     """Creates a dialog with the most recent executive report data, if it exists."""
+    tactical_report = report_service.get_most_recent_by_incident_id_and_type(
+        db_session=db_session, incident_id=incident_id, report_type=ReportTypes.tactical_report
+    )
+    if not tactical_report:
+        message = ":nop: No se puede crear un reporte ejecutivo sin haber diligenciado el reporte " \
+                  "táctico!!!\n```/dispatch-report-tactical```"
+        dispatch_slack_service.send_ephemeral_message(
+            slack_client, channel_id, user_id, message
+        )
+        return
+
     # we load the most recent executive report
     executive_report = report_service.get_most_recent_by_incident_id_and_type(
         db_session=db_session, incident_id=incident_id, report_type=ReportTypes.executive_report

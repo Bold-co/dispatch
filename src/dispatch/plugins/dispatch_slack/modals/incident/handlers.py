@@ -13,6 +13,7 @@ from dispatch.messaging.strings import INCIDENT_TIMELINE_NEW_NOTIFICATION
 from dispatch.participant import service as participant_service
 from dispatch.participant.models import ParticipantUpdate
 from dispatch.plugin import service as plugin_service
+from dispatch.plugins.dispatch_slack import service as dispatch_slack_service
 from dispatch.plugins.dispatch_slack.decorators import slack_background_task
 from dispatch.plugins.dispatch_slack.messaging import create_incident_reported_confirmation_message
 from dispatch.plugins.dispatch_slack.modals.common import parse_submitted_form
@@ -23,6 +24,8 @@ from dispatch.plugins.dispatch_slack.service import (
     get_user_profile_by_email
 )
 from dispatch.project import service as project_service
+from dispatch.report import service as report_service
+from dispatch.report.enums import ReportTypes
 from .enums import (
     IncidentBlockId,
     UpdateParticipantBlockId,
@@ -190,10 +193,34 @@ def update_incident_from_submitted_form(
         tags=tags,
     )
 
+    if incident_in.status == IncidentStatus.closed and incident_in.incident_type.name != "Falso positivo":
+        tactical_report = report_service.get_most_recent_by_incident_id_and_type(
+            db_session=db_session, incident_id=incident_id, report_type=ReportTypes.tactical_report
+        )
+        if not tactical_report:
+            message = ":nop: No se puede cerrar un incidente sin haber diligenciado el reporte " \
+                      "táctico!!!\n```/dispatch-report-tactical```"
+            dispatch_slack_service.send_ephemeral_message(
+                slack_client, channel_id, user_id, message
+            )
+            return
+
+        # we load the most recent executive report
+        executive_report = report_service.get_most_recent_by_incident_id_and_type(
+            db_session=db_session, incident_id=incident_id, report_type=ReportTypes.executive_report
+        )
+        if not executive_report:
+            message = ":nop: No se puede cerrar un incidente sin haber diligenciado el reporte " \
+                      "ejecutivo!!!\n```/dispatch-report-executive```"
+            dispatch_slack_service.send_ephemeral_message(
+                slack_client, channel_id, user_id, message
+            )
+            return
+
     incident = incident_service.get(db_session=db_session, incident_id=incident_id)
     existing_incident = IncidentRead.from_orm(incident)
 
-    # we don't allow visibility to be set in slack so we copy it over
+    # we don't allow visibility to be set in slack, so we copy it over
     incident_in.visibility = incident.visibility
 
     updated_incident = incident_service.update(
@@ -203,7 +230,7 @@ def update_incident_from_submitted_form(
 
     if updated_incident.status != IncidentStatus.closed.value:
         send_ephemeral_message(
-            slack_client, channel_id, user_id, "You have sucessfully updated the incident."
+            slack_client, channel_id, user_id, "You have successfully updated the incident."
         )
 
 
@@ -331,8 +358,8 @@ def update_notifications_group_from_submitted_form(
     )
     updated_members = (
         parsed_form_data.get(UpdateNotificationsGroupBlockId.update_members)
-            .replace(" ", "")
-            .split(",")
+        .replace(" ", "")
+        .split(",")
     )
 
     members_added = list(set(updated_members) - set(current_members))
