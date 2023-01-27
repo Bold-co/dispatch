@@ -199,9 +199,6 @@ def create_tactical_report_dialog(
     for product in product_list:
         product_options.append(dialog_option_from_template(text=product, value=product))
 
-    if not incident.platform:
-        incident.platform = "AWS..."
-
     dialog = {
         "callback_id": command["command"],
         "title": "Tactical Report",
@@ -214,10 +211,18 @@ def create_tactical_report_dialog(
                 "options": product_options,
                 "value": incident.product,
             },
-            {"type": "text", "label": "Affected technology platform", "name": "platform", "value": incident.platform},
-            {"type": "textarea", "label": "Causes", "name": "conditions", "value": conditions},
-            {"type": "textarea", "label": "Actions", "name": "actions", "value": actions},
-            {"type": "textarea", "label": "Consequences", "name": "needs", "value": needs},
+            {
+                "type": "text", "label": "Affected technology platform", "name": "platform", "value": incident.platform,
+                "placeholder": "AWS SMS, Redeban, ElasticSearch"},
+            {
+                "type": "textarea", "label": "Causes", "name": "conditions", "value": conditions,
+                "placeholder": "Identifique los eventos, acciones, omisiones o condiciones que condujeron al incidente."},
+            {
+                "type": "textarea", "label": "Actions", "name": "actions", "value": actions,
+                "placeholder": "¿Qué acciones se están ejecutando para identificar la causa raíz, disminuir el impacto o estabilizar el incidente?"},
+            {
+                "type": "textarea", "label": "Consequences", "name": "needs", "value": needs,
+                "placeholder": "¿Qué consecuencias han sido identificadas durante el análisis técnico del incidente?"},
         ],
     }
 
@@ -276,13 +281,18 @@ def create_executive_report_dialog(
                 "label": "Current Status",
                 "name": "current_status",
                 "value": current_status,
+                "placeholder": "¿Cuál es el estado actual del incidente? ¿Fue mitigado, se aplicó una solución temporal, o se ajustó definitivamente?"
             },
-            {"type": "textarea", "label": "Overview", "name": "overview", "value": overview},
+            {
+                "type": "textarea", "label": "Overview", "name": "overview", "value": overview,
+                "placeholder": "¿Qué impacto negativo generó el incidente?\nEl impacto se mide en terminos de usuarios afectados, TPV, transacciones, sesiones de usuario, etc."
+            },
             {
                 "type": "textarea",
                 "label": "Next Steps",
                 "name": "next_steps",
                 "value": next_steps,
+                "placeholder": "¿Qué tareas de remediación están pendientes de ser ejecutadas? ¿Se deben implementar alertas o controles?",
                 "hint": f"Use {SLACK_COMMAND_UPDATE_NOTIFICATIONS_GROUP_SLUG} to update the list of recipients of this report.",
             },
         ],

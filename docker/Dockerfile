@@ -77,8 +77,10 @@ RUN apt-get purge -y --auto-remove $buildDeps \
     # build dependencies to prevent accidental collusion.
     # These are also installed last as they are needed
     # during container run and can have the same deps w/
+
+RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
-    pkg-config postgresql-client-12 nodejs \
+    pkg-config postgresql-client-14 nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && npm install mjml

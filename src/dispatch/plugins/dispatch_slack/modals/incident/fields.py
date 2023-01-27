@@ -60,14 +60,15 @@ def incident_type_select_block(
     db_session: Session, initial_option: IncidentType = None, project_id: int = None
 ):
     """Builds the incident type select block."""
+    incident_types = []
     incident_type_options = []
     for incident_type in incident_type_service.get_all_enabled(
         db_session=db_session, project_id=project_id
     ):
+        incident_types.append(incident_type.name)
         incident_type_options.append(
             option_from_template(text=incident_type.name, value=incident_type.name)
         )
-
         incident_type_options = sorted(incident_type_options, key=itemgetter('value'))
 
     block = {
@@ -81,7 +82,7 @@ def incident_type_select_block(
         },
     }
 
-    if initial_option:
+    if initial_option and initial_option.name in incident_types:
         block["element"].update(
             {
                 "initial_option": option_from_template(
@@ -97,10 +98,12 @@ def incident_priority_select_block(
     db_session: Session, initial_option: IncidentPriority = None, project_id: int = None
 ):
     """Builds the incident priority select block."""
+    incident_priorities = []
     incident_priority_options = []
     for incident_priority in incident_priority_service.get_all_enabled(
         db_session=db_session, project_id=project_id
     ):
+        incident_priorities.append(incident_priority.name)
         incident_priority_options.append(
             option_from_template(text=incident_priority.name, value=incident_priority.name)
         )
@@ -116,7 +119,7 @@ def incident_priority_select_block(
         },
     }
 
-    if initial_option:
+    if initial_option and initial_option.name in incident_priorities:
         block["element"].update(
             {
                 "initial_option": option_from_template(
@@ -130,8 +133,10 @@ def incident_priority_select_block(
 
 def project_select_block(db_session: Session, initial_option: dict = None):
     """Builds the incident project select block."""
+    projects = []
     project_options = []
     for project in project_service.get_all(db_session=db_session):
+        projects.append(project.name)
         project_options.append(option_from_template(text=project.name, value=project.name))
 
     block = {
@@ -150,7 +155,7 @@ def project_select_block(db_session: Session, initial_option: dict = None):
         },
     }
 
-    if initial_option:
+    if initial_option and initial_option.name in projects:
         block["element"].update(
             {
                 "initial_option": option_from_template(
@@ -196,9 +201,10 @@ def team_select_block(initial_option_team: str = None):
 
 def product_select_block(team: str, initial_option_product: str = None):
     """Builds the incident team select block."""
+    products = []
     product_options = []
-
     for product in products.get_products(team=team):
+        products.append(product)
         product_options.append(option_from_template(text=product, value=product))
 
     block = {
@@ -215,7 +221,7 @@ def product_select_block(team: str, initial_option_product: str = None):
         },
     }
 
-    if initial_option_product:
+    if initial_option_product and initial_option_product in products:
         block["element"].update(
             {
                 "initial_option": option_from_template(

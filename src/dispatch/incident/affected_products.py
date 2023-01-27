@@ -69,4 +69,4 @@ def describe_products(team: str, product: str):
 
 def get_products_by_team(team: str):
     products = get_products().get(team, [])
-    return products.keys()
+    return sorted(products.keys(), key=str.casefold)
