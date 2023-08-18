@@ -121,6 +121,10 @@ def create_executive_report(
                 previous_executive_reports.append(
                     f"{executive_report.document.name} - {executive_report.document.weblink}\n"
                 )
+            else:
+                previous_executive_reports.append(
+                    f""
+                )
 
     # we create a new executive report
     details = {"current_status": current_status, "overview": overview, "next_steps": next_steps}

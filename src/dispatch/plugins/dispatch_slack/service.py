@@ -1,12 +1,10 @@
-import time
-import logging
 import functools
+import logging
+import time
+from typing import Any, Dict, List, Optional
 
 import slack_sdk
 from slack_sdk.web.async_client import AsyncWebClient
-
-from typing import Any, Dict, List, Optional
-
 from tenacity import TryAgain, retry, retry_if_exception_type, stop_after_attempt
 
 from .config import (
@@ -45,7 +43,7 @@ def resolve_user(client: Any, user_id: str):
 def chunks(ids, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(ids), n):
-        yield ids[i: i + n]
+        yield ids[i : i + n]
 
 
 def paginated(data_key):
@@ -347,27 +345,30 @@ def send_ephemeral_message(
     thread_ts: Optional[str] = None,
 ):
     """Sends an ephemeral message to a user in a channel."""
-    if thread_ts:
-        response = make_call(
-            client,
-            "chat.postEphemeral",
-            channel=conversation_id,
-            user=user_id,
-            text=text,
-            thread_ts=thread_ts,
-            blocks=blocks,
-        )
-    else:
-        response = make_call(
-            client,
-            "chat.postEphemeral",
-            channel=conversation_id,
-            user=user_id,
-            text=text,
-            blocks=blocks,
-        )
+    try:
+        if thread_ts:
+            response = make_call(
+                client,
+                "chat.postEphemeral",
+                channel=conversation_id,
+                user=user_id,
+                text=text,
+                thread_ts=thread_ts,
+                blocks=blocks,
+            )
+        else:
+            response = make_call(
+                client,
+                "chat.postEphemeral",
+                channel=conversation_id,
+                user=user_id,
+                text=text,
+                blocks=blocks,
+            )
 
-    return {"id": response["channel"], "timestamp": response["ts"]}
+        return {"id": response["channel"], "timestamp": response["ts"]}
+    except Exception:
+        return None
 
 
 # TODO what about pagination?

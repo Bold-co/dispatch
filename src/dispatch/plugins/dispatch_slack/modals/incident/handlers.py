@@ -40,7 +40,7 @@ from .views import (
     add_timeline_event,
 )
 
-_FALSE_POSITIVE_TYPE = "Falso Positivo"
+_FALSE_POSITIVE_TYPE = "Falso positivo"
 
 
 # report incident
