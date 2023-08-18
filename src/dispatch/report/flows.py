@@ -1,5 +1,4 @@
 import logging
-
 from datetime import date
 
 from dispatch.config import INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT, REPORT_INCIDENTS
@@ -11,7 +10,6 @@ from dispatch.exceptions import InvalidConfiguration
 from dispatch.incident import service as incident_service
 from dispatch.participant import service as participant_service
 from dispatch.plugin import service as plugin_service
-
 from .enums import ReportTypes
 from .messaging import (
     send_executive_report_to_notifications_group,
@@ -20,7 +18,6 @@ from .messaging import (
 )
 from .models import ReportCreate, TacticalReportCreate, ExecutiveReportCreate
 from .service import create, get_all_by_incident_id_and_type
-from ..incident.service import send_created_incident_quality_event
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +69,7 @@ def create_tactical_report(
         db_session=db_session,
         source="Incident Participant",
         description=f"{participant.individual.name} created a new tactical report",
-        details={"Causes": conditions, "actions": actions, "Consequences": needs},
+        details={"Product": incident.product, "Platform": incident.platform, "Causes": conditions, "actions": actions, "Consequences": needs},
         incident_id=incident_id,
         individual_id=participant.individual.id,
     )
@@ -84,8 +81,8 @@ def create_tactical_report(
     send_tactical_report_to_tactical_group(incident_id, tactical_report, db_session)
 
     # Only if not previous tactical report exists
-    if REPORT_INCIDENTS and not tactical_exists:
-        send_created_incident_quality_event(incident)
+    # if REPORT_INCIDENTS and not tactical_exists:
+    #    send_created_incident_quality_event(incident)
 
     return tactical_report
 
@@ -118,10 +115,12 @@ def create_executive_report(
     )
 
     previous_executive_reports = []
-    for executive_report in executive_reports:
-        previous_executive_reports.append(
-            f"{executive_report.document.name} - {executive_report.document.weblink}\n"
-        )
+    if executive_reports:
+        for executive_report in executive_reports:
+            if executive_report.document:
+                previous_executive_reports.append(
+                    f"{executive_report.document.name} - {executive_report.document.weblink}\n"
+                )
 
     # we create a new executive report
     details = {"current_status": current_status, "overview": overview, "next_steps": next_steps}
@@ -157,58 +156,59 @@ def create_executive_report(
     storage_plugin = plugin_service.get_active_instance(
         db_session=db_session, project_id=incident.project.id, plugin_type="storage"
     )
-    executive_report_document_name = f"{incident.name} - Executive Report - {current_date}"
-    executive_report_document = storage_plugin.instance.copy_file(
-        folder_id=incident.storage.resource_id,
-        file_id=report_template.resource_id,
-        name=executive_report_document_name,
-    )
+    if storage_plugin:
+        executive_report_document_name = f"{incident.name} - Executive Report - {current_date}"
+        executive_report_document = storage_plugin.instance.copy_file(
+            folder_id=incident.storage.resource_id,
+            file_id=report_template.resource_id,
+            name=executive_report_document_name,
+        )
 
-    executive_report_document.update(
-        {
-            "name": executive_report_document_name,
-            "resource_type": INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT,
-        }
-    )
+        executive_report_document.update(
+            {
+                "name": executive_report_document_name,
+                "resource_type": INCIDENT_RESOURCE_EXECUTIVE_REPORT_DOCUMENT,
+            }
+        )
 
-    storage_plugin.instance.move_file(
-        new_folder_id=incident.storage.resource_id, file_id=executive_report_document["id"]
-    )
+        storage_plugin.instance.move_file(
+            new_folder_id=incident.storage.resource_id, file_id=executive_report_document["id"]
+        )
 
-    document_in = DocumentCreate(
-        name=executive_report_document["name"],
-        resource_id=executive_report_document["id"],
-        resource_type=executive_report_document["resource_type"],
-        project=incident.project,
-        weblink=executive_report_document["weblink"],
-    )
-    executive_report.document = document_service.create(
-        db_session=db_session, document_in=document_in
-    )
+        document_in = DocumentCreate(
+            name=executive_report_document["name"],
+            resource_id=executive_report_document["id"],
+            resource_type=executive_report_document["resource_type"],
+            project=incident.project,
+            weblink=executive_report_document["weblink"],
+        )
+        executive_report.document = document_service.create(
+            db_session=db_session, document_in=document_in
+        )
 
-    incident.documents.append(executive_report.document)
+        incident.documents.append(executive_report.document)
 
-    db_session.add(executive_report)
-    db_session.add(incident)
-    db_session.commit()
+        db_session.add(executive_report)
+        db_session.add(incident)
+        db_session.commit()
 
-    # we update the incident update document
-    document_plugin = plugin_service.get_active_instance(
-        db_session=db_session, project_id=incident.project.id, plugin_type="document"
-    )
-    document_plugin.instance.update(
-        executive_report_document["id"],
-        name=incident.name,
-        title=incident.title,
-        current_date=current_date,
-        current_status=current_status,
-        overview=overview,
-        next_steps=next_steps,
-        previous_reports="\n".join(previous_executive_reports),
-        commander_fullname=incident.commander.individual.name,
-        commander_team=incident.commander.team,
-        commander_weblink=incident.commander.individual.weblink,
-    )
+        # we update the incident update document
+        document_plugin = plugin_service.get_active_instance(
+            db_session=db_session, project_id=incident.project.id, plugin_type="document"
+        )
+        document_plugin.instance.update(
+            executive_report_document["id"],
+            name=incident.name,
+            title=incident.title,
+            current_date=current_date,
+            current_status=current_status,
+            overview=overview,
+            next_steps=next_steps,
+            previous_reports="\n".join(previous_executive_reports),
+            commander_fullname=incident.commander.individual.name,
+            commander_team=incident.commander.team,
+            commander_weblink=incident.commander.individual.weblink,
+        )
 
     # we send the executive report to the notifications group
     send_executive_report_to_conversation(incident.id, executive_report, db_session)
@@ -218,6 +218,9 @@ def create_executive_report(
     if REPORT_INCIDENTS and (not previous_executive_reports or len(previous_executive_reports) == 0):
         tracking = document_service.get_incident_risk_sheet(db_session=db_session)
         if tracking:
+            document_plugin = plugin_service.get_active_instance(
+                db_session=db_session, project_id=incident.project.id, plugin_type="document"
+            )
             document_plugin.instance.update_risk_sheet(
                 tracking.resource_id,
                 incident=incident,

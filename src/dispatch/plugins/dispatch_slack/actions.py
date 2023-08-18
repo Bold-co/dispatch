@@ -22,7 +22,8 @@ from .config import (
     SLACK_COMMAND_ENGAGE_ONCALL_SLUG,
     SLACK_COMMAND_REPORT_EXECUTIVE_SLUG,
     SLACK_COMMAND_REPORT_TACTICAL_SLUG,
-    SLACK_COMMAND_ASSIGN_TASK_SLUG, SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG,
+    SLACK_COMMAND_ASSIGN_TASK_SLUG,
+    SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG,
 )
 from .decorators import slack_background_task
 from .modals.feedback.handlers import (
@@ -49,6 +50,7 @@ from .modals.incident.handlers import (
 from .modals.workflow.handlers import run_workflow_submitted_form, update_workflow_modal
 from .modals.workflow.views import RunWorkflowCallbackId
 from .service import get_user_email, send_message, get_user_info_by_id
+from ...config import INCIDENT_DEFAULT_CONTACT
 from ...feedback.enums import FeedbackRating
 from ...feedback.messaging import send_learned_lesson_notification
 from ...feedback.models import FeedbackCreate
@@ -73,6 +75,9 @@ def handle_modal_action(action: dict, background_tasks: BackgroundTasks):
     channel_id = view_data["private_metadata"].get("channel_id")
     user_id = action["user"]["id"]
     user_email = action["user"]["email"]
+
+    if not user_email:
+        user_email = INCIDENT_DEFAULT_CONTACT
 
     for f in action_functions(action_id):
         background_tasks.add_task(f, user_id, user_email, channel_id, incident_id, action)
@@ -203,15 +208,19 @@ def add_user_to_conversation(
         message = "Sorry, we cannot add you to this incident it does not exist."
         dispatch_slack_service.send_ephemeral_message(slack_client, channel_id, user_id, message)
     elif incident.status == IncidentStatus.closed:
-        message = f"Sorry, we cannot add you to a closed incident. " \
-                  f"Please reach out to the incident commander ({incident.commander.individual.name}) for details."
+        message = (
+            f"Sorry, we cannot add you to a closed incident. "
+            f"Please reach out to the incident commander ({incident.commander.individual.name}) for details."
+        )
         dispatch_slack_service.send_ephemeral_message(slack_client, channel_id, user_id, message)
     else:
         dispatch_slack_service.add_users_to_conversation(
             slack_client, incident.conversation.channel_id, [user_id]
         )
-        message = f"Success! We've added you to incident {incident.name}. " \
-                  f"Please check your side bar for the new channel."
+        message = (
+            f"Success! We've added you to incident {incident.name}. "
+            f"Please check your side bar for the new channel."
+        )
         dispatch_slack_service.send_ephemeral_message(slack_client, channel_id, user_id, message)
 
 
@@ -263,7 +272,7 @@ def update_task_status(
             file_id = task.incident.incident_review_document.resource_id
             drive_task_plugin.instance.update(file_id, external_task_id, resolved=resolve)
     else:
-        task_in = TaskUpdate(**{'status': task_status, 'assignees': []})
+        task_in = TaskUpdate(**{"status": task_status, "assignees": []})
         task_service.update(db_session=db_session, task_in=task_in, task=task)
 
     status = "resolved" if task_status == TaskStatus.resolved else "re-opened"
@@ -333,11 +342,9 @@ def handle_tactical_report_create(
         product=action["submission"]["product"],
     )
 
-    # we don't allow visibility to be set in slack so we copy it over
+    # we don't allow visibility to be set in slack, so we copy it over
     incident_in.visibility = incident.visibility
-    incident_service.update(
-        db_session=db_session, incident=incident, incident_in=incident_in
-    )
+    incident_service.update(db_session=db_session, incident=incident, incident_in=incident_in)
 
     report_flows.create_tactical_report(
         user_email=user_email,
@@ -381,13 +388,14 @@ def handle_executive_report_create(
     )
 
     # we let the user know that the report has been created
-    send_feedack_to_user(
-        incident.conversation.channel_id,
-        incident.project.id,
-        user_id,
-        f"The executive report document has been created and can be found in the incident storage here: {executive_report.document.weblink}",
-        db_session,
-    )
+    if executive_report.document and executive_report.document.weblink:
+        send_feedack_to_user(
+            incident.conversation.channel_id,
+            incident.project.id,
+            user_id,
+            f"The executive report document has been created and can be found in the incident storage here: {executive_report.document.weblink}",
+            db_session,
+        )
 
     # we let the user know that the report has been sent to the notifications group
     send_feedack_to_user(
@@ -438,9 +446,7 @@ def handle_assign_task_action(
     task.incident = incident
     task.creator = {"individual": {"email": user_email}}
     task.owner = {"individual": {"email": assignee_email}}
-    task.assignees = [
-        {"individual": {"email": assignee_email}}
-    ]
+    task.assignees = [{"individual": {"email": assignee_email}}]
     task.description = description
 
     task_service.create(db_session=db_session, task_in=task)
@@ -485,7 +491,9 @@ def handle_add_learned_lesson(
 
     user = get_user_info_by_id(client=slack_client, user_id=user_id)["real_name"]
 
-    send_learned_lesson_notification(incident=incident, feedback=feedback, db_session=db_session, user=user)
+    send_learned_lesson_notification(
+        incident=incident, feedback=feedback, db_session=db_session, user=user
+    )
 
 
 def dialog_action_functions(action: str):
@@ -496,7 +504,7 @@ def dialog_action_functions(action: str):
         SLACK_COMMAND_REPORT_EXECUTIVE_SLUG: [handle_executive_report_create],
         SLACK_COMMAND_REPORT_TACTICAL_SLUG: [handle_tactical_report_create],
         SLACK_COMMAND_ASSIGN_TASK_SLUG: [handle_assign_task_action],
-        SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG: [handle_add_learned_lesson]
+        SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG: [handle_add_learned_lesson],
     }
 
     # this allows for unique action blocks e.g. invite-user or invite-user-1, etc

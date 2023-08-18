@@ -163,20 +163,21 @@ def get_all_by_incident_type(
 def create(
     *,
     db_session,
+    cf: bool = False,
+    description: str,
     incident_priority: str,
     incident_type: str,
+    platform: str = None,
+    product: str = None,
+    project: str = None,
     reporter_email: str,
-    title: str,
+    report_source: str = None,
     status: str,
-    description: str,
     tags: List[dict],
     team_id: str = None,
     team_name: str = None,
-    report_source: str = None,
-    project: str = None,
+    title: str,
     visibility: str = None,
-    product: str = None,
-    platform: str = None,
 ) -> Incident:
     """Creates a new incident."""
     if not project:
@@ -223,19 +224,20 @@ def create(
 
     # We create the incident
     incident = Incident(
-        title=title,
+        cf=cf,
         description=description,
-        status=status,
         incident_type=incident_type,
         incident_priority=incident_priority,
-        visibility=visibility,
-        tags=tag_objs,
-        report_source=report_source,
-        team_id=team_id,
-        team_name=team_name,
         project=project,
         product=product,
         platform=platform,
+        report_source=report_source,
+        status=status,
+        tags=tag_objs,
+        team_id=team_id,
+        team_name=team_name,
+        title=title,
+        visibility=visibility,
     )
     db_session.add(incident)
     db_session.commit()

@@ -25,17 +25,36 @@ def get_products():
 
 
 @lru_cache(maxsize=32)
-def get_teams():
+def get_teams_info():
     try:
         teams_url = f"{INCIDENT_DEVOPS_ENDPOINT}/incidents/teams"
         response = requests.get(url=teams_url, auth=devops_basic_auth())
 
         if not response.ok:
             log.error(f"Error getting teams from bold API: {response.text}")
-            return []
+            return {}
 
-        teams = response.json()["teams"]
+        return response.json()["teams"]
+    except Exception:
+        log.error(f"Error getting teams from bold API")
+    return {}
+
+
+@lru_cache(maxsize=32)
+def get_teams():
+    try:
+        teams = get_teams_info()
         return sorted(teams, key=str.casefold)
+    except Exception:
+        log.error(f"Error getting teams from bold API")
+    return []
+
+
+@lru_cache(maxsize=32)
+def get_team(team: str):
+    try:
+        teams = get_teams_info()
+        return teams.get(team)
     except Exception:
         log.error(f"Error getting teams from bold API")
     return []
@@ -57,13 +76,14 @@ def get_area_info():
     return {}
 
 
-def describe_products(team: str, product: str):
+def describe_products(team: str, product: str, cf: bool = False):
     products = get_products().get(team, {}).get(product, {})
+    line_cf = products.get("business_line_cf")
     return (
         products.get("owner", ""),
         products.get("area", ""),
         products.get("process", ""),
-        products.get("business_line", "")
+        line_cf if cf and line_cf else products.get("business_line", ""),
     )
 
 

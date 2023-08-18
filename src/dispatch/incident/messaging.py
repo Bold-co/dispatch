@@ -6,7 +6,11 @@
 """
 import logging
 
-from dispatch.config import DISPATCH_UI_URL, DISPATCH_HELP_SLACK_CHANNEL, DISPATCH_SECURITY_SLACK_CHANNEL
+from dispatch.config import (
+    DISPATCH_UI_URL,
+    DISPATCH_HELP_SLACK_CHANNEL,
+    DISPATCH_SECURITY_SLACK_CHANNEL,
+)
 from dispatch.conversation.enums import ConversationCommands
 from dispatch.database.core import SessionLocal, resolve_attr
 from dispatch.document import service as document_service
@@ -15,7 +19,6 @@ from dispatch.incident.models import Incident, IncidentRead
 from dispatch.messaging.strings import (
     INCIDENT_CLOSED_INFORMATION_REVIEW_REMINDER_NOTIFICATION,
     INCIDENT_CLOSED_RATING_FEEDBACK_NOTIFICATION,
-    INCIDENT_COMMANDER,
     INCIDENT_COMMANDER_READDED_NOTIFICATION,
     INCIDENT_MANAGEMENT_HELP_TIPS_MESSAGE,
     INCIDENT_NAME,
@@ -31,7 +34,9 @@ from dispatch.messaging.strings import (
     INCIDENT_STATUS_CHANGE,
     INCIDENT_STATUS_REMINDER,
     INCIDENT_TYPE_CHANGE,
-    MessageType, INCIDENT_CREATED_NOTIFICATION,
+    MessageType,
+    INCIDENT_CREATED_NOTIFICATION,
+    INCIDENT_CREATED_MANAGER_REPORT,
 )
 from dispatch.notification import service as notification_service
 from dispatch.participant import service as participant_service
@@ -187,7 +192,7 @@ def send_incident_welcome_participant_messages(
     send_welcome_ephemeral_message_to_participant(participant_email, incident, db_session)
 
     # we send the welcome email
-    send_welcome_email_to_participant(participant_email, incident, db_session)
+    # send_welcome_email_to_participant(participant_email, incident, db_session)
 
     log.debug(f"Welcome participant messages sent {participant_email}.")
 
@@ -234,7 +239,7 @@ def send_incident_suggested_reading_messages(
         log.debug(f"Suggested reading ephemeral message sent to {participant_email}.")
 
 
-def send_incident_created_notifications(incident: Incident, db_session: SessionLocal):
+def send_incident_created_notifications(incident: Incident, team: dict, db_session: SessionLocal):
     """Sends incident created notifications."""
     notification_template = INCIDENT_NOTIFICATION.copy()
 
@@ -267,7 +272,7 @@ def send_incident_created_notifications(incident: Incident, db_session: SessionL
         "contact_weblink": incident.commander.individual.weblink,
         "incident_id": incident.id,
         "team_name": incident.team_name,
-        "report_source": incident.report_source
+        "report_source": incident.report_source,
     }
 
     faq_doc = document_service.get_incident_faq_document(db_session=db_session)
@@ -296,9 +301,11 @@ def send_incident_created_notifications(incident: Incident, db_session: SessionL
         notification_kwargs.update({"conversation": f"#{incident.conversation.resource_id}"})
         notification_kwargs.update({"conversation_weblink": incident.conversation.weblink})
 
-        channel = DISPATCH_HELP_SLACK_CHANNEL \
-            if incident.incident_type.name != "Security" \
+        channel = (
+            DISPATCH_HELP_SLACK_CHANNEL
+            if incident.incident_type.name != "Security"
             else DISPATCH_SECURITY_SLACK_CHANNEL
+        )
 
         plugin.instance.send(
             channel,
@@ -306,8 +313,43 @@ def send_incident_created_notifications(incident: Incident, db_session: SessionL
             INCIDENT_CREATED_NOTIFICATION,
             notification_type=MessageType.incident_notification,
             persist=False,
-            **notification_kwargs
+            **notification_kwargs,
         )
+
+    notification_template = INCIDENT_NOTIFICATION.copy()
+    notification_template.pop(0)
+    plugin.instance.send(
+        incident.conversation.channel_id,
+        "Incident Notification",
+        notification_template,
+        notification_type=MessageType.incident_notification,
+        persist=True,
+        **notification_kwargs,
+    )
+    manager = team.get("em")
+    team_channel = team.get("channel")
+    notification_template = INCIDENT_CREATED_MANAGER_REPORT
+    notification_kwargs = {
+        "channel": incident.conversation.resource_id,
+        "team": incident.team_name,
+        "title": incident.title,
+    }
+    plugin.instance.send_direct(
+        manager,
+        "Incident Notification",
+        notification_template,
+        notification_type=MessageType.incident_notification,
+        persist=False,
+        **notification_kwargs,
+    )
+    plugin.instance.send(
+        team_channel,
+        "Incident Notification",
+        notification_template,
+        notification_type=MessageType.incident_notification,
+        persist=False,
+        **notification_kwargs,
+    )
 
     log.debug("Incident created notifications sent.")
 
@@ -338,7 +380,7 @@ def send_incident_update_notifications(
         log.debug("Incident updated notifications not sent.")
         return
 
-    notification_template.append(INCIDENT_COMMANDER)
+    # notification_template.append(INCIDENT_COMMANDER)
 
     # we send an update to the incident conversation if the incident is active or stable
     if incident.status != IncidentStatus.closed:
@@ -364,7 +406,7 @@ def send_incident_update_notifications(
                 incident_type_new=incident.incident_type.name,
                 incident_type_old=previous_incident.incident_type.name,
                 name=incident.name,
-                ticket_weblink=incident.ticket.weblink,
+                ticket_weblink=incident.ticket.weblink if incident.ticket else None,
                 title=incident.title,
             )
         else:
@@ -726,7 +768,7 @@ def send_incident_close_reminder(incident: Incident, db_session: SessionLocal):
         {
             "command": update_command,
             "name": incident.name,
-            "ticket_weblink": incident.ticket.weblink,
+            "ticket_weblink": incident.ticket if incident.ticket.weblink else None,
             "title": incident.title,
             "status": incident.status,
         }
@@ -807,7 +849,7 @@ def send_incident_rating_feedback_message(incident: Incident, db_session: Sessio
             "incident_id": incident.id,
             "name": incident.name,
             "title": incident.title,
-            "ticket_weblink": incident.ticket.weblink,
+            "ticket_weblink": incident.ticket if incident.ticket.weblink else None,
         }
     ]
 

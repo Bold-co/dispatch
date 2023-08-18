@@ -24,8 +24,7 @@ from .fields import (
     status_select_block,
     incident_priority_select_block,
     incident_type_select_block,
-    team_select_block, report_source_select_block, product_select_block,
-)
+    team_select_block, report_source_select_block, cf_input_block, )
 
 
 def update_incident(db_session: SessionLocal, channel_id: str, incident_id: int = None):
@@ -46,6 +45,7 @@ def update_incident(db_session: SessionLocal, channel_id: str, incident_id: int 
                 ],
             },
             title_input_block(initial_value=incident.title),
+            cf_input_block(initial_value="True" if incident.cf else None),
             description_input_block(initial_value=incident.description),
             team_select_block(initial_option_team=incident.team_name),
             status_select_block(initial_option=incident.status),
@@ -83,6 +83,7 @@ def report_incident(
         "title": {"type": "plain_text", "text": "Incident Report"},
         "blocks": [
             title_input_block(initial_value=title),
+            cf_input_block(),
             description_input_block(initial_value=description),
             incident_type_select_block(db_session=db_session, project_id=project.id),
             incident_priority_select_block(db_session=db_session, project_id=project.id),

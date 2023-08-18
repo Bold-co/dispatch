@@ -328,6 +328,35 @@ def description_input_block(initial_value: str = None):
     return block
 
 
+def cf_input_block(initial_value: str = None):
+    """Builds a CF checkbox."""
+    block = {
+        "block_id": IncidentBlockId.cf,
+        "label": {"type": "plain_text", "text": "Compañía"},
+        "optional": True,
+        "type": "input",
+        "element": {
+            "type": "checkboxes",
+            "options": [
+                {
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Bold CF",
+                        "emoji": True,
+                    },
+                    "value": "True"
+                }
+            ]
+        },
+    }
+
+    if initial_value:
+        init_json = {"initial_options": [{"text": {"type": "plain_text", "text": "Bold CF", }, "value": "True"}]}
+        block["element"].update(init_json)
+
+    return block
+
+
 def participants_select_block(incident: Incident, initial_option: Participant = None):
     """Builds a static select with all current participants."""
     participant_options = []

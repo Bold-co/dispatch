@@ -9,7 +9,9 @@ from dispatch.messaging.strings import (
     INCIDENT_EXECUTIVE_REPORT,
     INCIDENT_REPORT_REMINDER,
     INCIDENT_TACTICAL_REPORT,
-    MessageType, INCIDENT_TITLE_ES, )
+    MessageType,
+    INCIDENT_TITLE_ES,
+)
 from dispatch.plugin import service as plugin_service
 from .enums import ReportTypes
 from .models import Report
@@ -58,12 +60,13 @@ def send_tactical_report_to_conversation(
             conditions=conditions,
             actions=actions,
             needs=needs,
+            product=incident.product,
+            platform=incident.platform,
         )
 
         log.debug(f"Tactical report sent to conversation {incident.conversation.channel_id}.")
     except Exception as e:
         log.exception(e)
-
 
 
 def send_tactical_report_to_tactical_group(
@@ -123,8 +126,13 @@ def send_executive_report_to_conversation(
 
         template = INCIDENT_EXECUTIVE_REPORT.copy()
         template.pop(0)
-        template.insert(0, {"title": "Incident Executive Report",
-                            "text": "A new incident executive report has been created"})
+        template.insert(
+            0,
+            {
+                "title": "Incident Executive Report",
+                "text": "A new incident executive report has been created",
+            },
+        )
         template.insert(1, INCIDENT_TITLE_ES)
 
         plugin.instance.send(
@@ -139,12 +147,16 @@ def send_executive_report_to_conversation(
             overview=executive_report.details.get("overview"),
             next_steps=executive_report.details.get("next_steps"),
             weblink=executive_report.document.weblink
+            if executive_report.document and executive_report.document.weblink
+            else "",
         )
 
         if DISPATCH_HELP_SLACK_CHANNEL:
-            channel = DISPATCH_HELP_SLACK_CHANNEL \
-                if incident.incident_type.name != "Security" \
+            channel = (
+                DISPATCH_HELP_SLACK_CHANNEL
+                if incident.incident_type.name != "Security"
                 else DISPATCH_SECURITY_SLACK_CHANNEL
+            )
 
             plugin.instance.send(
                 channel,
@@ -158,6 +170,8 @@ def send_executive_report_to_conversation(
                 overview=executive_report.details.get("overview"),
                 next_steps=executive_report.details.get("next_steps"),
                 weblink=executive_report.document.weblink
+                if executive_report.document and executive_report.document.weblink
+                else "",
             )
 
         log.debug(f"Executive report sent to conversation {incident.conversation.channel_id}.")
@@ -194,13 +208,17 @@ def send_executive_report_to_notifications_group(
             current_status=executive_report.details.get("current_status"),
             overview=executive_report.details.get("overview"),
             next_steps=executive_report.details.get("next_steps"),
-            weblink=executive_report.document.weblink,
+            weblink=executive_report.document.weblink
+            if executive_report.document and executive_report.document.weblink
+            else "",
             notifications_group=incident.notifications_group.email,
             contact_fullname=incident.commander.individual.name,
             contact_weblink=incident.commander.individual.weblink,
         )
 
-        log.debug(f"Executive report sent to notifications group {incident.notifications_group.email}.")
+        log.debug(
+            f"Executive report sent to notifications group {incident.notifications_group.email}."
+        )
     except Exception as e:
         log.exception(e)
 

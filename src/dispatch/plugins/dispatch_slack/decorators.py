@@ -18,7 +18,7 @@ def fullname(o):
 
 
 def slack_background_task(func):
-    """Decorator that sets up the a slack background task function
+    """Decorator that sets up the slack background task function
     with a database session and exception tracking.
 
     As background tasks run in their own threads, it does not attempt

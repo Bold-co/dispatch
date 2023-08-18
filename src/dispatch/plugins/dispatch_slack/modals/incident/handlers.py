@@ -40,6 +40,8 @@ from .views import (
     add_timeline_event,
 )
 
+_FALSE_POSITIVE_TYPE = "Falso Positivo"
+
 
 # report incident
 @slack_background_task
@@ -103,14 +105,15 @@ def report_incident_from_submitted_form(
 ):
     submitted_form = action.get("view")
     parsed_form_data = parse_submitted_form(submitted_form)
-
+    cf = True if parsed_form_data.get(IncidentBlockId.cf) else False
     # Send a confirmation to the user
     blocks = create_incident_reported_confirmation_message(
-        title=parsed_form_data[IncidentBlockId.title],
+        cf=cf,
         description=parsed_form_data[IncidentBlockId.description],
-        incident_type=parsed_form_data[IncidentBlockId.type]["value"],
         incident_priority=parsed_form_data[IncidentBlockId.priority]["value"],
+        incident_type=parsed_form_data[IncidentBlockId.type]["value"],
         team=parsed_form_data[IncidentBlockId.team]["name"],
+        title=parsed_form_data[IncidentBlockId.title],
         report_source=parsed_form_data[IncidentBlockId.report_source]["name"]
     )
 
@@ -127,17 +130,17 @@ def report_incident_from_submitted_form(
         tags.append({"id": t["value"]})
 
     project = project_service.get_default(db_session=db_session)
-
     incident_in = IncidentCreate(
-        title=parsed_form_data[IncidentBlockId.title],
+        cf=cf,
         description=parsed_form_data[IncidentBlockId.description],
-        incident_type={"name": parsed_form_data[IncidentBlockId.type]["value"]},
         incident_priority={"name": parsed_form_data[IncidentBlockId.priority]["value"]},
+        incident_type={"name": parsed_form_data[IncidentBlockId.type]["value"]},
         project={"name": project.name},
         report_source=parsed_form_data[IncidentBlockId.report_source]["name"],
+        tags=tags,
         team_id=parsed_form_data[IncidentBlockId.team]["value"],
         team_name=parsed_form_data[IncidentBlockId.team]["name"],
-        tags=tags,
+        title=parsed_form_data[IncidentBlockId.title],
     )
 
     # Create the incident
@@ -182,21 +185,33 @@ def update_incident_from_submitted_form(
     for t in parsed_form_data.get(IncidentBlockId.tags, []):
         tags.append({"id": t["value"]})
 
+    cf = True if parsed_form_data.get(IncidentBlockId.cf) else False
     incident_in = IncidentUpdate(
-        title=parsed_form_data[IncidentBlockId.title],
+        cf=cf,
         description=parsed_form_data[IncidentBlockId.description],
-        incident_type={"name": parsed_form_data[IncidentBlockId.type]["value"]},
         incident_priority={"name": parsed_form_data[IncidentBlockId.priority]["value"]},
+        incident_type={"name": parsed_form_data[IncidentBlockId.type]["value"]},
         status=parsed_form_data[IncidentBlockId.status]["value"],
+        tags=tags,
         team_id=parsed_form_data[IncidentBlockId.team]["value"],
         team_name=parsed_form_data[IncidentBlockId.team]["name"],
-        tags=tags,
+        title=parsed_form_data[IncidentBlockId.title],
     )
 
-    if incident_in.status == IncidentStatus.closed and incident_in.incident_type.name != "Falso positivo":
+    if incident_in.status == IncidentStatus.closed and incident_in.incident_type.name != _FALSE_POSITIVE_TYPE:
         tactical_report = report_service.get_most_recent_by_incident_id_and_type(
             db_session=db_session, incident_id=incident_id, report_type=ReportTypes.tactical_report
         )
+        inc_events = event_service.get_by_incident_id(db_session=db_session, incident_id=incident_id)
+        events = sorted(inc_events, key=lambda x: x.started_at, reverse=False)
+        first_event = events[0]
+        if first_event.description.endswith("Incident created"):
+            message = ":nop: No se puede cerrar un incidente sin haber registrado " \
+                      "el evento de inicio!!!\n```/dispatch-add-timeline-event```"
+            dispatch_slack_service.send_ephemeral_message(
+                slack_client, channel_id, user_id, message
+            )
+            return
         if not tactical_report:
             message = ":nop: No se puede cerrar un incidente sin haber diligenciado el reporte " \
                       "táctico!!!\n```/dispatch-report-tactical```"

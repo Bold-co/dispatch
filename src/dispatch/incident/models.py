@@ -1,9 +1,10 @@
-from datetime import datetime
 from collections import Counter
+from datetime import datetime
 from typing import List, Optional, Any
 
 from pydantic import validator
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -11,19 +12,19 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     String,
     Table,
-    select,
+    select
 )
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils import TSVectorType
 
+from dispatch.conference.models import ConferenceRead
 from dispatch.config import (
     INCIDENT_RESOURCE_INCIDENT_REVIEW_DOCUMENT,
     INCIDENT_RESOURCE_INVESTIGATION_DOCUMENT,
     INCIDENT_RESOURCE_NOTIFICATIONS_GROUP,
     INCIDENT_RESOURCE_TACTICAL_GROUP,
 )
-from dispatch.conference.models import ConferenceRead
 from dispatch.conversation.models import ConversationRead
 from dispatch.database.core import Base
 from dispatch.document.models import DocumentRead
@@ -46,9 +47,7 @@ from dispatch.storage.models import StorageRead
 from dispatch.tag.models import TagRead
 from dispatch.ticket.models import TicketRead
 from dispatch.workflow.models import WorkflowInstanceRead
-
 from .enums import IncidentStatus
-
 
 assoc_incident_terms = Table(
     "assoc_incident_terms",
@@ -69,21 +68,22 @@ assoc_incident_tags = Table(
 
 class Incident(Base, TimeStampMixin, ProjectMixin):
     id = Column(Integer, primary_key=True)
-    name = Column(String)
-    title = Column(String, nullable=False)
+    cf = Column(Boolean)
     description = Column(String, nullable=False)
-    status = Column(String, default=IncidentStatus.active.value)
-    visibility = Column(String, default=Visibility.open)
+    name = Column(String)
+    platform = Column(String)
+    product = Column(String)
     report_source = Column(String)
+    status = Column(String, default=IncidentStatus.active.value)
     team_id = Column(String)
     team_name = Column(String)
-    product = Column(String)
-    platform = Column(String)
+    title = Column(String, nullable=False)
+    visibility = Column(String, default=Visibility.open)
 
     # auto generated
+    closed_at = Column(DateTime)
     reported_at = Column(DateTime, default=datetime.utcnow)
     stable_at = Column(DateTime)
-    closed_at = Column(DateTime)
 
     search_vector = Column(
         TSVectorType(
@@ -278,90 +278,94 @@ class IncidentBase(DispatchBase):
 
 class IncidentReadNested(IncidentBase):
     id: int
-    name: str = None
-    report_source: Optional[str] = None
-    team_id: Optional[str] = None
-    team_name: Optional[str] = None
-    product: Optional[str] = None
-    platform: Optional[str] = None
-    reporter: Optional[ParticipantRead]
+    cf: Optional[bool] = False
+    closed_at: Optional[datetime] = None
     commander: Optional[ParticipantRead]
+    created_at: Optional[datetime] = None
     incident_priority: IncidentPriorityRead
     incident_type: IncidentTypeRead
-    created_at: Optional[datetime] = None
+    name: str = None
+    platform: Optional[str] = None
+    product: Optional[str] = None
+    report_source: Optional[str] = None
     reported_at: Optional[datetime] = None
+    reporter: Optional[ParticipantRead]
     stable_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
+    team_id: Optional[str] = None
+    team_name: Optional[str] = None
 
 
 class IncidentCreate(IncidentBase):
-    report_source: Optional[str] = None
+    cf: Optional[bool] = False
+    incident_priority: Optional[IncidentPriorityCreate]
+    incident_type: Optional[IncidentTypeCreate]
     team_id: Optional[str] = None
     team_name: Optional[str] = None
     product: Optional[str] = None
     platform: Optional[str] = None
-    incident_priority: Optional[IncidentPriorityCreate]
-    incident_type: Optional[IncidentTypeCreate]
-    tags: Optional[List[Any]] = []  # any until we figure out circular imports
     project: ProjectRead
+    report_source: Optional[str] = None
+    tags: Optional[List[Any]] = []  # any until we figure out circular imports
 
 
 class IncidentUpdate(IncidentBase):
-    report_source: Optional[str] = None
-    team_id: Optional[str] = None
-    team_name: Optional[str] = None
-    product: Optional[str] = None
-    platform: Optional[str] = None
+    cf: Optional[bool] = False
+    commander: Optional[ParticipantUpdate]
+    duplicates: Optional[List[IncidentReadNested]] = []
+    incident_costs: Optional[List[IncidentCostUpdate]] = []
     incident_priority: IncidentPriorityBase
     incident_type: IncidentTypeBase
+    platform: Optional[str] = None
+    product: Optional[str] = None
+    report_source: Optional[str] = None
     reported_at: Optional[datetime] = None
-    stable_at: Optional[datetime] = None
-    commander: Optional[ParticipantUpdate]
     reporter: Optional[ParticipantUpdate]
-    duplicates: Optional[List[IncidentReadNested]] = []
+    stable_at: Optional[datetime] = None
     tags: Optional[List[Any]] = []  # any until we figure out circular imports
+    team_id: Optional[str] = None
+    team_name: Optional[str] = None
     terms: Optional[List[Any]] = []  # any until we figure out circular imports
-    incident_costs: Optional[List[IncidentCostUpdate]] = []
 
 
 class IncidentRead(IncidentBase):
     id: int
+    cf: Optional[bool] = False
+    commander: Optional[ParticipantRead]
+    conference: Optional[ConferenceRead] = None
+    conversation: Optional[ConversationRead] = None
+    created_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    documents: Optional[List[DocumentRead]] = []
+    duplicates: Optional[List[IncidentReadNested]] = []
+    events: Optional[List[EventRead]] = []
+    incident_costs: Optional[List[IncidentCostRead]] = []
+    incident_priority: IncidentPriorityRead
+    incident_type: IncidentTypeRead
     name: str = None
-    report_source: Optional[str] = None
-    team_id: Optional[str] = None
-    team_name: Optional[str] = None
-    product: Optional[str] = None
+    last_tactical_report: Optional[ReportRead]
+    last_executive_report: Optional[ReportRead]
+    participants: Optional[List[ParticipantRead]] = []
     platform: Optional[str] = None
     primary_team: Any
     primary_location: Any
-    reporter: Optional[ParticipantRead]
-    commander: Optional[ParticipantRead]
-    last_tactical_report: Optional[ReportRead]
-    last_executive_report: Optional[ReportRead]
-    incident_priority: IncidentPriorityRead
-    incident_type: IncidentTypeRead
-    participants: Optional[List[ParticipantRead]] = []
-    workflow_instances: Optional[List[WorkflowInstanceRead]] = []
-    storage: Optional[StorageRead] = None
-    ticket: Optional[TicketRead] = None
-    documents: Optional[List[DocumentRead]] = []
-    tags: Optional[List[TagRead]] = []
-    terms: Optional[List[Any]] = []  # any until we figure out circular imports
-    conference: Optional[ConferenceRead] = None
-    conversation: Optional[ConversationRead] = None
-    events: Optional[List[EventRead]] = []
-    created_at: Optional[datetime] = None
-    reported_at: Optional[datetime] = None
-    duplicates: Optional[List[IncidentReadNested]] = []
-    stable_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
-    incident_costs: Optional[List[IncidentCostRead]] = []
-    total_cost: Optional[float]
     project: ProjectRead
+    product: Optional[str] = None
+    reporter: Optional[ParticipantRead]
+    report_source: Optional[str] = None
+    reported_at: Optional[datetime] = None
+    stable_at: Optional[datetime] = None
+    storage: Optional[StorageRead] = None
+    tags: Optional[List[TagRead]] = []
+    team_id: Optional[str] = None
+    team_name: Optional[str] = None
+    terms: Optional[List[Any]] = []  # any until we figure out circular imports
+    ticket: Optional[TicketRead] = None
+    total_cost: Optional[float]
+    workflow_instances: Optional[List[WorkflowInstanceRead]] = []
 
 
 class IncidentPagination(DispatchBase):
-    total: int
+    items: List[IncidentRead] = []
     itemsPerPage: int
     page: int
-    items: List[IncidentRead] = []
+    total: int

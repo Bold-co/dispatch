@@ -42,6 +42,15 @@ def get_instance(*, db_session, plugin_instance_id: int) -> Optional[PluginInsta
     )
 
 
+def get_instance_by_plugin_id(*, db_session, plugin_id: int) -> Optional[PluginInstance]:
+    """Returns a plugin instance based on the given instance id."""
+    return (
+        db_session.query(PluginInstance)
+        .filter(PluginInstance.plugin_id == plugin_id)
+        .one_or_none()
+    )
+
+
 def get_active_instance(
     *, db_session, plugin_type: str, project_id=None
 ) -> Optional[PluginInstance]:

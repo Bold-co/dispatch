@@ -26,24 +26,26 @@ def get_resource_matches(
     matched_resources = []
     for resource in resources:
         for f in resource.filters:
+            try:
+                match = None
 
-            match = None
-
-            if f.expression and f.expression[0]:
-                match = search_filter_service.match(
-                    db_session=db_session,
-                    filter_spec=f.expression,
-                    class_instance=incident,
-                )
-
-            if match:
-                matched_resources.append(
-                    RecommendationMatch(
-                        resource_state=json.loads(model_state(**resource.__dict__).json()),
-                        resource_type=model_cls.__name__,
+                if f.expression and f.expression[0]:
+                    match = search_filter_service.match(
+                        db_session=db_session,
+                        filter_spec=f.expression,
+                        class_instance=incident,
                     )
-                )
-                break
+
+                if match:
+                    matched_resources.append(
+                        RecommendationMatch(
+                            resource_state=json.loads(model_state(**resource.__dict__).json()),
+                            resource_type=model_cls.__name__,
+                        )
+                    )
+                    break
+            except Exception:
+                continue
 
     return matched_resources
 

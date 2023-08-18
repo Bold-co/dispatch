@@ -72,7 +72,7 @@ RUN set -x \
     # && apt-get install -y --no-install-recommends $buildDeps
     # remove internal index when internal plugins are seperated
 RUN pip install -U /tmp/dist/*.whl
-RUN apt-get purge -y --auto-remove $buildDeps \
+RUN apt-get purge -y --auto-remove $buildDeps
     # We install run-time dependencies strictly after
     # build dependencies to prevent accidental collusion.
     # These are also installed last as they are needed

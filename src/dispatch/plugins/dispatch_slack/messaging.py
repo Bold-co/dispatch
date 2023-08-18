@@ -7,18 +7,16 @@
 import logging
 from datetime import datetime, date
 from typing import List, Optional
+
 from jinja2 import Template
 
 from dispatch.messaging.strings import (
     DOCUMENT_EVERGREEN_REMINDER_DESCRIPTION,
-    INCIDENT_DAILY_REPORT_DESCRIPTION,
     INCIDENT_PARTICIPANT_SUGGESTED_READING_DESCRIPTION,
     INCIDENT_TASK_LIST_DESCRIPTION,
     INCIDENT_TASK_REMINDER_DESCRIPTION,
     MessageType,
-    render_message_template, INCIDENT_TIMELINE_NEW_DESCRIPTION,
-)
-
+    render_message_template, )
 from .config import (
     SLACK_COMMAND_ADD_TIMELINE_EVENT_SLUG,
     SLACK_COMMAND_ASSIGN_ROLE_SLUG,
@@ -35,12 +33,10 @@ from .config import (
     SLACK_COMMAND_UPDATE_NOTIFICATIONS_GROUP_SLUG,
     SLACK_COMMAND_UPDATE_PARTICIPANT_SLUG,
     SLACK_COMMAND_RUN_WORKFLOW_SLUG,
-    SLACK_COMMAND_LIST_WORKFLOWS_SLUG,
+    SLACK_COMMAND_LIST_WORKFLOWS_SLUG, SLACK_COMMAND_LIST_EVENTS_SLUG,
 )
 
-
 log = logging.getLogger(__name__)
-
 
 INCIDENT_CONVERSATION_TACTICAL_REPORT_SUGGESTION = f"Consider providing a tactical report using the `{SLACK_COMMAND_REPORT_TACTICAL_SLUG}` command."
 
@@ -100,6 +96,10 @@ INCIDENT_CONVERSATION_COMMAND_MESSAGE = {
     SLACK_COMMAND_ADD_TIMELINE_EVENT_SLUG: {
         "response_type": "ephemeral",
         "text": "Opening a dialog to add an event to the incident timeline...",
+    },
+    SLACK_COMMAND_LIST_EVENTS_SLUG: {
+        "response_type": "ephemeral",
+        "text": "Fetching the list of events...",
     },
     SLACK_COMMAND_LIST_INCIDENTS_SLUG: {
         "response_type": "ephemeral",
@@ -165,7 +165,7 @@ def create_command_run_in_conversation_where_bot_not_present_message(
 
 
 def create_incident_reported_confirmation_message(
-    title: str, description: str, incident_type: str, incident_priority: str, team: str, report_source: str
+    title: str, description: str, incident_type: str, incident_priority: str, team: str, report_source: str, cf: bool
 ):
     """Creates an incident reported confirmation message."""
     return [
@@ -173,7 +173,7 @@ def create_incident_reported_confirmation_message(
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": "Security Incident Reported",
+                "text": f"{team} Incident Reported {'(CF)' if cf else ''}",
             },
         },
         {
@@ -184,18 +184,18 @@ def create_incident_reported_confirmation_message(
                         "with the following information. You'll get invited to a Slack conversation soon.",
             },
         },
-        {"type": "section", "text": {"type": "mrkdwn", "text": f"*Incident Title*: {title}"}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": f"*Title*: {title}"}},
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*Incident Description*: {description}"},
+            "text": {"type": "mrkdwn", "text": f"*Description*: {description}"},
         },
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*Incident Type*: {incident_type}"},
+            "text": {"type": "mrkdwn", "text": f"*Type*: {incident_type}"},
         },
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*Incident Priority*: {incident_priority}"},
+            "text": {"type": "mrkdwn", "text": f"*Priority*: {incident_priority}"},
         },
         {
             "type": "section",

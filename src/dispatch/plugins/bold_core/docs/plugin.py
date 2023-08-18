@@ -7,10 +7,11 @@
 """
 import datetime
 import logging
+import typing
 
 from dispatch.common.utils.date import date_diff, date_to_tz
 from dispatch.config import INCIDENT_TRACKING_SHEET_RANGE, INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE, \
-    RISK_TRACKING_SHEET_RANGE
+    RISK_TRACKING_SHEET_RANGE, INCIDENT_ENABLE_DOCUMENTATION
 from dispatch.decorators import apply, counter, timer
 from dispatch.incident.affected_products import describe_products, get_area_info
 from dispatch.incident.models import Incident
@@ -48,7 +49,8 @@ class BoldDocumentPlugin(DocumentPlugin):
     def create_review(self, document_id: str, **kwargs):
         """Creates the review document."""
         try:
-            create_coda_review(document_id, **kwargs)
+            if INCIDENT_ENABLE_DOCUMENTATION:
+                create_coda_review(document_id, **kwargs)
         except Exception as e:
             log.exception(e)
 
@@ -111,12 +113,13 @@ class BoldDocumentPlugin(DocumentPlugin):
             events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
             started_at = date_to_tz(events[0].started_at) if events and events[0] else None
             closed = "Sí" if incident.status != "Active" else "No"
-            team = incident.team_name
+            team_name = incident.team_name
             product = incident.product
             platform = incident.platform
             reporter = incident.reporter.individual.email
+            cf = incident.cf
 
-            owner, area, process, business_line = describe_products(team=team, product=product)
+            owner, area, process, business_line = describe_products(team=team_name, product=product, cf=cf)
 
             tr_size = len(incident.tactical_reports)
             tc_size = len(incident.executive_reports)

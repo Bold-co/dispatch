@@ -113,9 +113,9 @@ DISPATCH_JWT_EMAIL_OVERRIDE = config("DISPATCH_JWT_EMAIL_OVERRIDE", default=None
 
 if DISPATCH_AUTHENTICATION_PROVIDER_SLUG == "dispatch-auth-provider-pkce":
     if not DISPATCH_JWT_AUDIENCE:
-        log.warn("No JWT Audience specified. This is required for IdPs like Okta")
+        log.warning("No JWT Audience specified. This is required for IdPs like Okta")
     if not DISPATCH_JWT_EMAIL_OVERRIDE:
-        log.warn("No JWT Email Override specified. 'email' is expected in the idtoken.")
+        log.warning("No JWT Email Override specified. 'email' is expected in the idtoken.")
 
 DISPATCH_JWT_SECRET = config("DISPATCH_JWT_SECRET", default=None)
 DISPATCH_JWT_ALG = config("DISPATCH_JWT_ALG", default="HS256")
@@ -282,4 +282,12 @@ INCIDENT_DEVOPS_USER = config(
 
 INCIDENT_DEVOPS_PASSWORD = config(
     "INCIDENT_DEVOPS_PASSWORD", default="9f8c6819-bbca-46e1-a51f-13f0ccbe743c"
+)
+
+INCIDENT_DEFAULT_CONTACT = config(
+    "INCIDENT_DEFAULT_CONTACT", default="oscar.romero@boldcf.co"
+)
+
+INCIDENT_ENABLE_DOCUMENTATION = config(
+    "INCIDENT_ENABLE_DOCUMENTATION", default=False
 )

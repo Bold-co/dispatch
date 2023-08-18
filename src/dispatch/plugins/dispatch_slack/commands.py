@@ -38,7 +38,7 @@ from .config import (
     SLACK_COMMAND_RUN_WORKFLOW_SLUG,
     SLACK_COMMAND_LIST_WORKFLOWS_SLUG,
     SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG,
-    SLACK_COMMAND_ASSIGN_TASK_SLUG,
+    SLACK_COMMAND_ASSIGN_TASK_SLUG, SLACK_COMMAND_LIST_EVENTS_SLUG,
 )
 from .decorators import slack_background_task
 from .dialogs import (
@@ -126,6 +126,7 @@ def command_functions(command: str):
         SLACK_COMMAND_ADD_TIMELINE_EVENT_SLUG: [create_add_timeline_event_modal],
         SLACK_COMMAND_ASSIGN_ROLE_SLUG: [create_assign_role_dialog],
         SLACK_COMMAND_ENGAGE_ONCALL_SLUG: [create_engage_oncall_dialog],
+        SLACK_COMMAND_LIST_EVENTS_SLUG: [list_events],
         SLACK_COMMAND_LIST_INCIDENTS_SLUG: [list_incidents],
         SLACK_COMMAND_LIST_MY_TASKS_SLUG: [list_my_tasks],
         SLACK_COMMAND_LIST_PARTICIPANTS_SLUG: [list_participants],
@@ -220,6 +221,46 @@ async def handle_slack_command(*, db_session, client, request, background_tasks)
         background_tasks.add_task(f, user_id, user_email, channel_id, incident_id, command=request)
 
     return INCIDENT_CONVERSATION_COMMAND_MESSAGE.get(command, f"Running... Command: {command}")
+
+
+@slack_background_task
+def list_events(
+    user_id: str,
+    user_email: str,
+    channel_id: str,
+    incident_id: int,
+    command: dict = None,
+    db_session=None,
+    slack_client=None,
+):
+    """Returns the list of incident events to the user as an ephemeral message."""
+    incident = incident_service.get(db_session=db_session, incident_id=incident_id)
+
+    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": "*Incident Events*"}}]
+    events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
+
+    for event in events:
+        blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*Date:* {event.started_at.strftime('%Y-%m-%d %H:%M:%S%Z')}\n"
+                        f"*Description:* {event.description}\n"
+                    ),
+                },
+            }
+        )
+        blocks.append({"type": "divider"})
+
+    dispatch_slack_service.send_ephemeral_message(
+        slack_client,
+        channel_id,
+        user_id,
+        "Incident Event List",
+        blocks=blocks,
+    )
 
 
 @slack_background_task

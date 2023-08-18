@@ -33,7 +33,7 @@ def create_slack_client(run_async: bool = False):
 def resolve_user(client: Any, user_id: str):
     """Attempts to resolve a user object regardless if email, id, or prefix."""
     if SLACK_USER_ID_OVERRIDE:
-        log.warning("SLACK_USER_ID_OVERIDE set. Using override.")
+        log.warning("SLACK_USER_ID_OVERRIDE set. Using override.")
         return {"id": SLACK_USER_ID_OVERRIDE}
 
     if "@" in user_id:

@@ -3,16 +3,17 @@ from enum import Enum
 
 # report + update blocks
 class IncidentBlockId(str, Enum):
-    title = "title_field"
+    cf = "cf_field"
     description = "description_field"
-    type = "incident_type_field"
     priority = "incident_priority_field"
-    tags = "tags_select_field"
+    product = "product_field"
     project = "project_field"
-    status = "status_field"
-    team = "team"
     report_source = "report_source"
-    product = "product"
+    status = "status_field"
+    tags = "tags_select_field"
+    team = "team_field"
+    title = "title_field"
+    type = "incident_type_field"
 
 
 # report incident

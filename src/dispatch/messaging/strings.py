@@ -1,12 +1,8 @@
 import copy
 from enum import Enum
-
-from jinja2 import Template
-
 from typing import List
 
-from dispatch.conversation.enums import ConversationButtonActions
-from dispatch.incident.enums import IncidentStatus
+from jinja2 import Template
 
 from dispatch.config import (
     INCIDENT_RESOURCE_CONVERSATION_REFERENCE_DOCUMENT,
@@ -16,6 +12,8 @@ from dispatch.config import (
     INCIDENT_RESOURCE_INVESTIGATION_DOCUMENT,
     INCIDENT_RESOURCE_INVESTIGATION_SHEET,
 )
+from dispatch.conversation.enums import ConversationButtonActions
+from dispatch.incident.enums import IncidentStatus
 
 
 class MessageType(str, Enum):
@@ -40,10 +38,14 @@ class MessageType(str, Enum):
 INCIDENT_STATUS_DESCRIPTIONS = {
     IncidentStatus.active.value: "This incident is under active investigation.",
     IncidentStatus.stable.value: "This incident is stable, the bulk of the investigation has been completed "
-                                 "or most of the risk has been mitigated.",
+    "or most of the risk has been mitigated.",
     IncidentStatus.closed.value: "This no longer requires additional involvement, long term incident action "
-                                 "items have been assigned to their respective owners.",
+    "items have been assigned to their respective owners.",
 }
+
+INCIDENT_MANAGEMENT_CREATED = """
+#{{channel}} - {{team}}: {{title}}.
+"""
 
 INCIDENT_TASK_REMINDER_DESCRIPTION = """
 You are assigned to the following incident tasks.
@@ -83,14 +85,13 @@ For questions about an incident, please reach out to the incident's commander.""
 ).strip()
 
 INCIDENT_REPORTER_DESCRIPTION = """
-The person who reported the incident. Contact them if the report details need clarification.""".replace(
+The person who reported the incident.""".replace(
     "\n", " "
 ).strip()
 
 INCIDENT_COMMANDER_DESCRIPTION = """
 The Incident Commander (IC) is responsible for
-knowing the full context of the incident.
-Contact them about any questions or concerns.""".replace(
+knowing the full context of the incident.""".replace(
     "\n", " "
 ).strip()
 
@@ -510,10 +511,7 @@ INCIDENT_NOTIFICATION.extend(
     ]
 )
 
-INCIDENT_CREATED_WELCOME = {
-    "type": "header",
-    "text": "A new incident has been created"
-}
+INCIDENT_CREATED_WELCOME = {"type": "header", "text": "A new incident has been created"}
 
 INCIDENT_CREATED_NOTIFICATION = [
     INCIDENT_CREATED_WELCOME,
@@ -523,31 +521,27 @@ INCIDENT_CREATED_NOTIFICATION = [
     INCIDENT_TYPE,
     INCIDENT_PRIORITY,
     INCIDENT_REPORTER,
-    INCIDENT_COMMANDER,
+    # INCIDENT_COMMANDER,
     INCIDENT_TEAM,
     INCIDENT_REPORT_SOURCE,
     INCIDENT_CONVERSATION,
-    INCIDENT_STORAGE,
-    INCIDENT_CONFERENCE
+    # INCIDENT_STORAGE,
+    INCIDENT_CONFERENCE,
 ]
 
-LEARNED_LESSON_TITLE = {
-    "type": "header",
-    "text": "Nueva lección aprendida"
-}
+LEARNED_LESSON_TITLE = {"type": "header", "text": "Nueva lección aprendida"}
 
-LEARNED_LESSONS = {
-    "title": "Lecciones aprendidas",
-    "text": "{{lessons}}"
-}
+LEARNED_LESSONS = {"title": "Lecciones aprendidas", "text": "{{lessons}}"}
 
 LEARNED_LESSON_NOTIFICATION = [
     LEARNED_LESSON_TITLE,
-    {"title": "Lecciones:", "text": "{{lessons}}\n     _- {{user}}_"}
+    {"title": "Lecciones:", "text": "{{lessons}}\n     _- {{user}}_"},
 ]
 
 INCIDENT_TACTICAL_REPORT = [
     {"title": "Incident Tactical Report", "text": INCIDENT_TACTICAL_REPORT_DESCRIPTION},
+    {"title": "Product", "text": "{{product}}"},
+    {"title": "Platform", "text": "{{platform}}"},
     {"title": "Causes", "text": "{{conditions}}"},
     {"title": "Actions", "text": "{{actions}}"},
     {"title": "Consequences", "text": "{{needs}}"},
@@ -569,6 +563,12 @@ INCIDENT_REPORT_REMINDER = [
     INCIDENT_TITLE,
 ]
 
+INCIDENT_CREATED_MANAGER_REPORT = [
+    {
+        "title": "Se ha creado un nuevo incidente.",
+        "text": INCIDENT_MANAGEMENT_CREATED,
+    }
+]
 
 INCIDENT_STATUS_REMINDER = [
     {
@@ -709,7 +709,6 @@ INCIDENT = [
     INCIDENT_PRIORITY,
     INCIDENT_COMMANDER,
 ]
-
 
 INCIDENT_MANAGEMENT_HELP_TIPS_MESSAGE = [
     {

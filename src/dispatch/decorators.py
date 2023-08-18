@@ -17,7 +17,7 @@ def fullname(o):
 
 
 def background_task(func):
-    """Decorator that sets up the a background task function
+    """Decorator that sets up the background task function
     with a database session and exception tracking.
 
     As background tasks run in their own threads, it does not attempt
