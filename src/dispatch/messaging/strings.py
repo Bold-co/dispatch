@@ -329,6 +329,11 @@ The incident priority has been changed from {{ incident_priority_old }} to {{ in
     "\n", " "
 ).strip()
 
+INCIDENT_TEAM_CHANGE_DESCRIPTION = """
+The incident team has been changed from {{ incident_team_old }} to {{ incident_team_new }}.""".replace(
+    "\n", " "
+).strip()
+
 INCIDENT_NAME_WITH_ENGAGEMENT = {
     "title": "{{name}} Incident Notification",
     "title_link": "{{ticket_weblink}}",
@@ -456,6 +461,11 @@ INCIDENT_PRIORITY_CHANGE = {
     "text": INCIDENT_PRIORITY_CHANGE_DESCRIPTION,
 }
 
+INCIDENT_TEAM_CHANGE = {
+    "title": "Team Change",
+    "text": INCIDENT_TEAM_CHANGE_DESCRIPTION,
+}
+
 INCIDENT_PARTICIPANT_SUGGESTED_READING_ITEM = {
     "title": "{{name}}",
     "title_link": "{{weblink}}",
@@ -504,10 +514,11 @@ INCIDENT_NOTIFICATION.extend(
     [
         INCIDENT_DESCRIPTION,
         INCIDENT_STATUS,
+        INCIDENT_TEAM,
         INCIDENT_TYPE,
         INCIDENT_PRIORITY_FYI,
-        INCIDENT_REPORTER,
         INCIDENT_COMMANDER,
+        INCIDENT_REPORT_SOURCE,
     ]
 )
 

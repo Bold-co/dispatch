@@ -1,8 +1,8 @@
+import base64
 import logging
 import os
-import base64
-from urllib import parse
 from typing import List
+from urllib import parse
 
 from starlette.config import Config
 from starlette.datastructures import CommaSeparatedStrings
@@ -246,6 +246,10 @@ BUSINESS_HOURS_YEAR = config("BUSINESS_HOURS_YEAR", cast=int, default="2080")
 
 INCIDENT_PREFIX = config(
     "INCIDENT_PREFIX", default="TEST-INC-0"
+)
+
+INCIDENT_PREFIX_CF = config(
+    "INCIDENT_PREFIX_CF", default="TEST-INC-CF-0"
 )
 
 # Tracking

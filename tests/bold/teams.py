@@ -16,6 +16,7 @@ print("Area:\n", area, "\n")
 
 team = get_team(teams[0])
 print("Team:\n", team, "\n")
+print(team.get("board"))
 
 team_products = get_products_by_team(teams[0])
 print("Team products:\n", team_products, "\n")

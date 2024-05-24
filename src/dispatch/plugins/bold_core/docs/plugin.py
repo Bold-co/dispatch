@@ -7,16 +7,24 @@
 """
 import datetime
 import logging
-import typing
 
 from dispatch.common.utils.date import date_diff, date_to_tz
-from dispatch.config import INCIDENT_TRACKING_SHEET_RANGE, INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE, \
-    RISK_TRACKING_SHEET_RANGE, INCIDENT_ENABLE_DOCUMENTATION
+from dispatch.config import (
+    INCIDENT_TRACKING_SHEET_RANGE,
+    INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE,
+    RISK_TRACKING_SHEET_RANGE,
+    INCIDENT_ENABLE_DOCUMENTATION,
+)
 from dispatch.decorators import apply, counter, timer
 from dispatch.incident.affected_products import describe_products, get_area_info
 from dispatch.incident.models import Incident
 from dispatch.plugins.bases import DocumentPlugin
-from dispatch.plugins.bold_core.docs.service import create_coda_review, replace_text, add_row, split_values
+from dispatch.plugins.bold_core.docs.service import (
+    create_coda_review,
+    replace_text,
+    add_row,
+    split_values,
+)
 from dispatch.plugins.dispatch_google import docs as google_docs_plugin
 from dispatch.plugins.dispatch_google.common import get_service
 
@@ -79,21 +87,42 @@ class BoldDocumentPlugin(DocumentPlugin):
             mttd = date_diff(start_date=events[0].started_at, end_date=incident.reported_at)
             mttr = date_diff(start_date=events[0].started_at, end_date=incident.stable_at)
 
-            add_row(client=client, document_id=document_id,
-                    params=[[name], [title], [priority], [started_at],
-                            [reported_at], [stable_at], [type], [description],
-                            [mttd], [mttr], [report_source],
-                            [team], [owner], [area], [process], [business_line], [platform]],
-                    range=INCIDENT_TRACKING_SHEET_RANGE)
+            add_row(
+                client=client,
+                document_id=document_id,
+                params=[
+                    [name],
+                    [title],
+                    [priority],
+                    [started_at],
+                    [reported_at],
+                    [stable_at],
+                    [type],
+                    [description],
+                    [mttd],
+                    [mttr],
+                    [report_source],
+                    [team],
+                    [owner],
+                    [area],
+                    [process],
+                    [business_line],
+                    [platform],
+                ],
+                range=INCIDENT_TRACKING_SHEET_RANGE,
+            )
         except Exception as e:
             log.exception(e)
 
         try:
             lessons = split_values(set(o.feedback for o in incident.feedback))
             for lesson in lessons:
-                add_row(client=client, document_id=document_id,
-                        params=[[lesson.feedback], [name], [title]],
-                        range=INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE)
+                add_row(
+                    client=client,
+                    document_id=document_id,
+                    params=[[lesson.feedback], [name], [title]],
+                    range=INCIDENT_TRACKING_SHEET_LEARNED_LESSONS_RANGE,
+                )
         except Exception as e:
             log.exception(e)
 
@@ -105,21 +134,24 @@ class BoldDocumentPlugin(DocumentPlugin):
         name = incident.name
 
         try:
-            current_time = date_to_tz(datetime.datetime.utcnow())
-            priority = incident.incident_priority.name
-            description = incident.description
-            reported_at = date_to_tz(incident.reported_at)
-            stable_at = date_to_tz(incident.stable_at) if incident.stable_at else None
-            events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
-            started_at = date_to_tz(events[0].started_at) if events and events[0] else None
-            closed = "Sí" if incident.status != "Active" else "No"
-            team_name = incident.team_name
-            product = incident.product
-            platform = incident.platform
-            reporter = incident.reporter.individual.email
             cf = incident.cf
+            closed = "Sí" if incident.status != "Active" else "No"
+            current_time = date_to_tz(datetime.datetime.utcnow())
+            description = incident.description
+            events = sorted(incident.events, key=lambda x: x.started_at, reverse=False)
+            platform = incident.platform
+            priority = incident.incident_priority.name
+            product = incident.product
+            reported_at = date_to_tz(incident.reported_at)
+            reporter = incident.reporter.individual.email
+            stable_at = date_to_tz(incident.stable_at) if incident.stable_at else None
+            started_at = date_to_tz(events[0].started_at) if events and events[0] else None
+            team_name = incident.team_name
+            type_name = incident.incident_type.name
 
-            owner, area, process, business_line = describe_products(team=team_name, product=product, cf=cf)
+            owner, area, process, business_line = describe_products(
+                team=team_name, product=product, cf=cf
+            )
 
             tr_size = len(incident.tactical_reports)
             tc_size = len(incident.executive_reports)
@@ -127,25 +159,51 @@ class BoldDocumentPlugin(DocumentPlugin):
             consequences = ""
             next_steps = ""
             if tr_size > 0:
-                reports = sorted(incident.tactical_reports, key=lambda report: report.created_at, reverse=True)
+                reports = sorted(
+                    incident.tactical_reports, key=lambda report: report.created_at, reverse=True
+                )
                 causes = reports[0].details.get("conditions")
                 consequences = reports[0].details.get("needs")
             if tc_size > 0:
-                reports = sorted(incident.executive_reports, key=lambda report: report.created_at, reverse=True)
+                reports = sorted(
+                    incident.executive_reports, key=lambda report: report.created_at, reverse=True
+                )
                 next_steps = reports[0].details.get("next_steps")
                 overview = reports[0].details.get("overview")
-                consequences = priority + "\n" + consequences + "\n" + overview
+                consequences = consequences + "\n" + overview
 
             area_info = get_area_info()
             area = str(area_info.get("area", ""))
 
-            add_row(client=client, document_id=document_id,
-                    params=[
-                        [current_time], [started_at], [reported_at], [closed],
-                        [description], [causes], [consequences], [platform],
-                        [process], [area], [business_line], [stable_at],
-                        [reporter], [], [],
-                        [name], [next_steps]],
-                    range=RISK_TRACKING_SHEET_RANGE)
+            mttr = date_diff(start_date=events[0].started_at, end_date=incident.stable_at)
+
+            add_row(
+                client=client,
+                document_id=document_id,
+                params=[
+                    [current_time],
+                    [started_at],
+                    [reported_at],
+                    [closed],
+                    [description],
+                    [causes],
+                    [consequences],
+                    [platform],
+                    [process],
+                    [area],
+                    [business_line],
+                    [stable_at],
+                    [reporter],
+                    [],
+                    [],
+                    [name],
+                    [next_steps],
+                    [priority],
+                    [type_name],
+                    [team_name],
+                    [mttr],
+                ],
+                range=RISK_TRACKING_SHEET_RANGE,
+            )
         except Exception as e:
             log.exception(e)

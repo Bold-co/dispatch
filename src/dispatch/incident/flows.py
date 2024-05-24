@@ -23,6 +23,7 @@ from dispatch.config import (
     INCIDENT_STORAGE_OPEN_ON_CLOSE,
     INCIDENT_ENABLE_DOCUMENTATION,
     INCIDENT_PREFIX,
+    INCIDENT_PREFIX_CF,
 )
 from dispatch.conversation import service as conversation_service
 from dispatch.conversation.models import ConversationCreate
@@ -177,8 +178,8 @@ def create_external_incident_ticket(incident: Incident, team: dict, db_session: 
             ticket.update({"resource_type": plugin.plugin.slug})
 
             return ticket
-    except Exception:
-        log.exception("Error creating second ticket")
+    except Exception as ex:
+        log.exception("Error creating second ticket", ex)
     return None
 
 
@@ -492,9 +493,9 @@ def incident_create_closed_flow(*, incident_id: int, checkpoint: str = None, db_
         incident.ticket = ticket_service.create(
             db_session=db_session, ticket_in=TicketCreate(**ticket)
         )
-
+        team = get_team(incident.team_name)
         incident.name = ticket["resource_id"]
-        update_external_incident_ticket(incident, db_session)
+        update_external_incident_ticket(incident, db_session, team=team)
 
     db_session.add(incident)
     db_session.commit()
@@ -508,7 +509,9 @@ def incident_create_closed_flow(*, incident_id: int, checkpoint: str = None, db_
 def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session=None):
     """Creates all resources required for new incidents."""
     incident = incident_service.get(db_session=db_session, incident_id=incident_id)
-    incident.name = f"{INCIDENT_PREFIX}{incident.id}"
+    incident.name = f"{INCIDENT_PREFIX_CF}{incident.id}" \
+        if incident.cf  \
+        else f"{INCIDENT_PREFIX}{incident.id}"
     # create the incident ticket
     team = get_team(incident.team_name)
     ticket = None
@@ -612,7 +615,7 @@ def incident_create_flow(*, incident_id: int, checkpoint: str = None, db_session
             log.exception(e)
 
     # we update the incident ticket
-    update_external_incident_ticket(incident, db_session)
+    update_external_incident_ticket(incident, db_session, team=team)
 
     # we update the investigation document
     document_plugin = plugin_service.get_active_instance(
@@ -1027,7 +1030,8 @@ def incident_update_flow(
     conversation_topic_dispatcher(incident, previous_incident, individual, db_session=db_session)
 
     # we update the external ticket
-    update_external_incident_ticket(incident, db_session)
+    team = get_team(incident.team_name)
+    update_external_incident_ticket(incident, db_session, team=team)
 
     # add new folks to the incident if appropriate
     # we only have to do this for teams as new members will be added to tactical
@@ -1124,7 +1128,8 @@ def incident_assign_role_flow(
             set_conversation_topic(incident, db_session)
 
         # we update the external ticket
-        update_external_incident_ticket(incident, db_session)
+        team = get_team(incident.team_name)
+        update_external_incident_ticket(incident, db_session, team=team)
 
 
 def get_contact(email: str, db_session, contact_plugin):

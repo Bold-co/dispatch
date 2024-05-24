@@ -1,14 +1,13 @@
 import logging
 from typing import List, Optional
+
 from fastapi.encoders import jsonable_encoder
 
 from dispatch.exceptions import InvalidConfiguration
 from dispatch.plugins.bases import OncallPlugin
 from dispatch.project import service as project_service
 from dispatch.service import service as service_service
-
 from .models import Plugin, PluginInstance, PluginInstanceCreate, PluginInstanceUpdate
-
 
 log = logging.getLogger(__name__)
 
@@ -45,9 +44,7 @@ def get_instance(*, db_session, plugin_instance_id: int) -> Optional[PluginInsta
 def get_instance_by_plugin_id(*, db_session, plugin_id: int) -> Optional[PluginInstance]:
     """Returns a plugin instance based on the given instance id."""
     return (
-        db_session.query(PluginInstance)
-        .filter(PluginInstance.plugin_id == plugin_id)
-        .one_or_none()
+        db_session.query(PluginInstance).filter(PluginInstance.plugin_id == plugin_id).one_or_none()
     )
 
 
@@ -64,10 +61,10 @@ def get_active_instance(
         .one_or_none()
     )
 
-    if not plugin:
-        log.error(
-            f"Attempted to fetch active plugin, but none were found. PluginType: {plugin_type} ProjectId: {project_id}"
-        )
+    # if not plugin:
+    #    log.error(
+    #        f"Attempted to fetch active plugin, but none were found. PluginType: {plugin_type} ProjectId: {project_id}"
+    #    )
 
     return plugin
 
@@ -85,10 +82,10 @@ def get_active_instance_by_slug(
         .one_or_none()
     )
 
-    if not plugin:
-        log.error(
-            f"Attempted to fetch active plugin, but none were found. PluginSlug: {slug} ProjectId: {project_id}"
-        )
+    # if not plugin:
+    #     log.error(
+    #         f"Attempted to fetch active plugin, but none were found. PluginSlug: {slug} ProjectId: {project_id}"
+    #     )
 
     return plugin
 

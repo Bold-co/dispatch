@@ -233,10 +233,11 @@ def product_select_block(team: str, initial_option_product: str = None):
     return block
 
 
-def report_source_select_block():
+def report_source_select_block(initial_option_source: str = None):
     """Builds the incident report source select block."""
     report_source_options = []
-    for source in sorted(INCIDENT_REPORT_CHANNELS.split(",")):
+    sources = sorted(INCIDENT_REPORT_CHANNELS.split(","))
+    for source in sources:
         report_source_options.append(option_from_template(text=source, value=source))
 
     block = {
@@ -252,6 +253,14 @@ def report_source_select_block():
             "options": report_source_options
         },
     }
+    if initial_option_source and initial_option_source in sources:
+        block["element"].update(
+            {
+                "initial_option": option_from_template(
+                    text=initial_option_source, value=initial_option_source
+                )
+            }
+        )
     return block
 
 

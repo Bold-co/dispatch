@@ -37,6 +37,7 @@ from dispatch.messaging.strings import (
     MessageType,
     INCIDENT_CREATED_NOTIFICATION,
     INCIDENT_CREATED_MANAGER_REPORT,
+    INCIDENT_TEAM_CHANGE,
 )
 from dispatch.notification import service as notification_service
 from dispatch.participant import service as participant_service
@@ -45,6 +46,8 @@ from dispatch.plugin import service as plugin_service
 
 log = logging.getLogger(__name__)
 
+
+_SECURITY_INCIDENT_TYPE = 2
 
 def get_suggested_documents(db_session, incident: Incident) -> list:
     """Get additional incident documents based on priority, type, and description."""
@@ -271,8 +274,8 @@ def send_incident_created_notifications(incident: Incident, team: dict, db_sessi
         "contact_fullname": incident.commander.individual.name,
         "contact_weblink": incident.commander.individual.weblink,
         "incident_id": incident.id,
-        "team_name": incident.team_name,
         "report_source": incident.report_source,
+        "team_name": incident.team_name,
     }
 
     faq_doc = document_service.get_incident_faq_document(db_session=db_session)
@@ -303,7 +306,7 @@ def send_incident_created_notifications(incident: Incident, team: dict, db_sessi
 
         channel = (
             DISPATCH_HELP_SLACK_CHANNEL
-            if incident.incident_type.name != "Security"
+            if incident.incident_type.id != _SECURITY_INCIDENT_TYPE
             else DISPATCH_SECURITY_SLACK_CHANNEL
         )
 
@@ -317,7 +320,10 @@ def send_incident_created_notifications(incident: Incident, team: dict, db_sessi
         )
 
     notification_template = INCIDENT_NOTIFICATION.copy()
-    notification_template.pop(0)
+    if incident.ticket and incident.ticket.weblink:
+        notification_template.append(
+            {"title": "WorkItem", "text": "{{ticket_weblink}}"}
+        )
     plugin.instance.send(
         incident.conversation.channel_id,
         "Incident Notification",
@@ -375,6 +381,10 @@ def send_incident_update_notifications(
         change = True
         notification_template.append(INCIDENT_PRIORITY_CHANGE)
 
+    if previous_incident.team_name != incident.team_name:
+        change = True
+        notification_template.append(INCIDENT_TEAM_CHANGE)
+
     if not change:
         # we don't need to notify
         log.debug("Incident updated notifications not sent.")
@@ -405,6 +415,8 @@ def send_incident_update_notifications(
                 incident_status_old=previous_incident.status.value,
                 incident_type_new=incident.incident_type.name,
                 incident_type_old=previous_incident.incident_type.name,
+                incident_team_new=incident.team_name,
+                incident_team_old=previous_incident.team_name,
                 name=incident.name,
                 ticket_weblink=incident.ticket.weblink if incident.ticket else None,
                 title=incident.title,
@@ -434,9 +446,13 @@ def send_incident_update_notifications(
         "incident_status_old": previous_incident.status.value,
         "incident_type_new": incident.incident_type.name,
         "incident_type_old": previous_incident.incident_type.name,
+        "incident_team_new": incident.team_name,
+        "incident_team_old": previous_incident.team_name,
         "name": incident.name,
         "ticket_weblink": resolve_attr(incident, "ticket.weblink"),
         "title": incident.title,
+        "team_name": incident.team_name,
+        "report_source": incident.report_source,
     }
 
     notification_params = {

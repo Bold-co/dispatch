@@ -58,7 +58,8 @@ def update_incident(db_session: SessionLocal, channel_id: str, incident_id: int 
                 db_session=db_session,
                 initial_option=incident.incident_priority,
                 project_id=incident.project.id,
-            )
+            ),
+            report_source_select_block(initial_option_source=incident.report_source),
         ],
         "close": {"type": "plain_text", "text": "Cancel"},
         "submit": {"type": "plain_text", "text": "Submit"},

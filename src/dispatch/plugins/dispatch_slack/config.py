@@ -69,5 +69,5 @@ SLACK_COMMAND_ASSIGN_TASK_SLUG = config(
     "SLACK_COMMAND_ASSIGN_TASK_SLUG", default="/dispatch-assign-task"
 )
 SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG = config(
-    "SLACK_COMMAND_ADD_FEEDBACK_SLUG", default="/dispatch-add-learned-lesson"
+    "SLACK_COMMAND_ADD_LEARNED_LESSON_SLUG", default="/dispatch-add-learned-lesson"
 )

@@ -11,11 +11,7 @@ from jinja2 import Template
 from dispatch.decorators import apply, counter, timer
 from dispatch.plugins import bold_azure as azure_plugin
 from dispatch.plugins.bases import TicketPlugin
-from .config import (
-    AZURE_DEVOPS_ORGANIZATION,
-    AZURE_DEVOPS_PROJECT,
-    AZURE_DEVOPS_PAT
-)
+from .config import AZURE_DEVOPS_ORGANIZATION, AZURE_DEVOPS_PROJECT, AZURE_DEVOPS_PAT
 
 AZURE_DEVOPS_URL = f"https://dev.azure.com/{AZURE_DEVOPS_ORGANIZATION}/{AZURE_DEVOPS_PROJECT}/"
 
@@ -74,27 +70,33 @@ class AzureTicketPlugin(TicketPlugin):
         team: dict = {},
     ):
         """Creates an Azure issue."""
-        board = team.get("board", "SRE")
-        url = f'{AZURE_DEVOPS_URL}_apis/wit/workitems/$Bug?api-version=6.0'
+        board = team.get("board")
+        url = f"{AZURE_DEVOPS_URL}_apis/wit/workitems/$Bug?api-version=6.0"
         data = [
             {
                 "op": "add",
                 "path": "/fields/System.Title",
-                "value": f"[INC] {'[CF]' if cf else ''} / {name} - {title}"
+                "value": f"[INC] {'[CF]' if cf else ''} / {name} - {title}",
             },
             {
                 "op": "add",
                 "path": "/fields/System.AreaPath",
-                "value": f"{AZURE_DEVOPS_PROJECT}\\{board}"
-            }
+                "value": f"{AZURE_DEVOPS_PROJECT}\\{board}",
+            },
         ]
 
-        response = requests.post(url, json=data,
-                                 headers={'Content-Type': 'application/json-patch+json'},
-                                 auth=('', AZURE_DEVOPS_PAT))
+        response = requests.post(
+            url,
+            json=data,
+            headers={"Content-Type": "application/json-patch+json"},
+            auth=("", AZURE_DEVOPS_PAT),
+        )
         data = response.json()
-        resource_id = data['id']
-        return {"resource_id": resource_id, "weblink": f"{AZURE_DEVOPS_URL}_workitems/edit/{resource_id}"}
+        resource_id = data["id"]
+        return {
+            "resource_id": resource_id,
+            "weblink": f"{AZURE_DEVOPS_URL}_workitems/edit/{resource_id}",
+        }
 
     def update(
         self,
@@ -131,44 +133,37 @@ class AzureTicketPlugin(TicketPlugin):
             storage_weblink=storage_weblink,
         )
 
-        url = f'{AZURE_DEVOPS_URL}_apis/wit/workitems/{ticket_id}?api-version=6.1-preview.3'
+        url = f"{AZURE_DEVOPS_URL}_apis/wit/workitems/{ticket_id}?api-version=6.1-preview.3"
 
-        if status != 'Active' or status != 'Closed':
-            status = 'Active'
-        board = team.get("board", "SRE")
+        if status != "Active" or status != "Closed":
+            status = "Active"
+        if status == "Stable":
+            status = "In Review"
+        board = team.get("board")
         data = [
             {
                 "op": "add",
                 "path": "/fields/System.Title",
-                "value": f"[INC] {'[CF]' if cf else ''} / {name} - {title}"
+                "value": f"[INC] {'[CF]' if cf else ''} / {name} - {title}",
             },
             {
                 "op": "add",
                 "path": "/fields/System.AreaPath",
-                "value": f"{AZURE_DEVOPS_PROJECT}\\{board}"
+                "value": f"{AZURE_DEVOPS_PROJECT}\\{board}",
             },
-            {
-                "op": "add",
-                "path": "/fields/System.State",
-                "value": status
-            },
-            {
-                "op": "add",
-                "path": "/fields/System.Description",
-                "value": description
-            },
-            {
-                "op": "add",
-                "path": "/fields/System.AssignedTo",
-                "value": commander_email
-            },
+            {"op": "add", "path": "/fields/System.State", "value": status},
+            {"op": "add", "path": "/fields/System.Description", "value": description},
+            {"op": "add", "path": "/fields/System.AssignedTo", "value": commander_email},
             {
                 "op": "add",
                 "path": "/fields/System.Tags",
-                "value": f"Incident; {incident_type}; {name} {'; CF' if cf else ''}"
-            }
+                "value": f"Incident; {incident_type}; {name} {'; CF' if cf else ''}",
+            },
         ]
 
-        requests.patch(url, json=data,
-                       headers={'Content-Type': 'application/json-patch+json'},
-                       auth=('', AZURE_DEVOPS_PAT))
+        requests.patch(
+            url,
+            json=data,
+            headers={"Content-Type": "application/json-patch+json"},
+            auth=("", AZURE_DEVOPS_PAT),
+        )

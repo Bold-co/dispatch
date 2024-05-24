@@ -19,6 +19,7 @@ from ..config import DISPATCH_HELP_SLACK_CHANNEL, DISPATCH_SECURITY_SLACK_CHANNE
 
 log = logging.getLogger(__name__)
 
+_SECURITY_INCIDENT_TYPE = 2
 
 def get_report_reminder_settings(report_type: ReportTypes):
     report_reminder_settings_map = {
@@ -154,7 +155,7 @@ def send_executive_report_to_conversation(
         if DISPATCH_HELP_SLACK_CHANNEL:
             channel = (
                 DISPATCH_HELP_SLACK_CHANNEL
-                if incident.incident_type.name != "Security"
+                if incident.incident_type.id != _SECURITY_INCIDENT_TYPE
                 else DISPATCH_SECURITY_SLACK_CHANNEL
             )
 

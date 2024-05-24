@@ -21,7 +21,7 @@ from dispatch.plugins.dispatch_slack.service import (
     send_ephemeral_message,
     open_modal_with_user,
     update_modal_with_user,
-    get_user_profile_by_email
+    get_user_profile_by_email,
 )
 from dispatch.project import service as project_service
 from dispatch.report import service as report_service
@@ -114,7 +114,7 @@ def report_incident_from_submitted_form(
         incident_type=parsed_form_data[IncidentBlockId.type]["value"],
         team=parsed_form_data[IncidentBlockId.team]["name"],
         title=parsed_form_data[IncidentBlockId.title],
-        report_source=parsed_form_data[IncidentBlockId.report_source]["name"]
+        report_source=parsed_form_data[IncidentBlockId.report_source]["name"],
     )
 
     send_ephemeral_message(
@@ -191,6 +191,7 @@ def update_incident_from_submitted_form(
         description=parsed_form_data[IncidentBlockId.description],
         incident_priority={"name": parsed_form_data[IncidentBlockId.priority]["value"]},
         incident_type={"name": parsed_form_data[IncidentBlockId.type]["value"]},
+        report_source=parsed_form_data[IncidentBlockId.report_source]["name"],
         status=parsed_form_data[IncidentBlockId.status]["value"],
         tags=tags,
         team_id=parsed_form_data[IncidentBlockId.team]["value"],
@@ -198,23 +199,32 @@ def update_incident_from_submitted_form(
         title=parsed_form_data[IncidentBlockId.title],
     )
 
-    if incident_in.status == IncidentStatus.closed and incident_in.incident_type.name != _FALSE_POSITIVE_TYPE:
+    if (
+        incident_in.status == IncidentStatus.closed
+        and incident_in.incident_type.name != _FALSE_POSITIVE_TYPE
+    ):
         tactical_report = report_service.get_most_recent_by_incident_id_and_type(
             db_session=db_session, incident_id=incident_id, report_type=ReportTypes.tactical_report
         )
-        inc_events = event_service.get_by_incident_id(db_session=db_session, incident_id=incident_id)
+        inc_events = event_service.get_by_incident_id(
+            db_session=db_session, incident_id=incident_id
+        )
         events = sorted(inc_events, key=lambda x: x.started_at, reverse=False)
         first_event = events[0]
         if first_event.description.endswith("Incident created"):
-            message = ":nop: No se puede cerrar un incidente sin haber registrado " \
-                      "el evento de inicio!!!\n```/dispatch-add-timeline-event```"
+            message = (
+                ":nop: No se puede cerrar un incidente sin haber registrado "
+                "el evento de inicio!!!\n```/dispatch-add-timeline-event```"
+            )
             dispatch_slack_service.send_ephemeral_message(
                 slack_client, channel_id, user_id, message
             )
             return
         if not tactical_report:
-            message = ":nop: No se puede cerrar un incidente sin haber diligenciado el reporte " \
-                      "táctico!!!\n```/dispatch-report-tactical```"
+            message = (
+                ":nop: No se puede cerrar un incidente sin haber diligenciado el reporte "
+                "táctico!!!\n```/dispatch-report-tactical```"
+            )
             dispatch_slack_service.send_ephemeral_message(
                 slack_client, channel_id, user_id, message
             )
@@ -225,8 +235,10 @@ def update_incident_from_submitted_form(
             db_session=db_session, incident_id=incident_id, report_type=ReportTypes.executive_report
         )
         if not executive_report:
-            message = ":nop: No se puede cerrar un incidente sin haber diligenciado el reporte " \
-                      "ejecutivo!!!\n```/dispatch-report-executive```"
+            message = (
+                ":nop: No se puede cerrar un incidente sin haber diligenciado el reporte "
+                "ejecutivo!!!\n```/dispatch-report-executive```"
+            )
             dispatch_slack_service.send_ephemeral_message(
                 slack_client, channel_id, user_id, message
             )
@@ -461,16 +473,18 @@ def add_timeline_event_from_submitted_form(
 
     incident = incident_service.get(db_session=db_session, incident_id=incident_id)
 
-    items = [{
-        "event_date": event_dt,
-        "creator": participant.individual.name,
-        "timeline_description": event_description
-    }]
+    items = [
+        {
+            "event_date": event_dt,
+            "creator": participant.individual.name,
+            "timeline_description": event_description,
+        }
+    ]
 
     send_timeline_event_notification(
         channel_id,
         INCIDENT_TIMELINE_NEW_NOTIFICATION,
         db_session,
         project_id=incident.project_id,
-        items=items
+        items=items,
     )
